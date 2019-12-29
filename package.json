@@ -1,0 +1,28 @@
+{
+  "name": "testcafe-reporter-testrail",
+  "version": "0.1.0",
+  "description": "Testcafe reporter plugin that automatically publishes test run details to the TestRail system.",
+  "main": "lib/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DamianOsipiuk/testcafe-reporter-testrail.git"
+  },
+  "keywords": [
+    "testcafe",
+    "reporter",
+    "plugin",
+    "testrail"
+  ],
+  "author": "Damian Osipiuk",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/DamianOsipiuk/testcafe-reporter-testrail/issues"
+  },
+  "homepage": "https://github.com/DamianOsipiuk/testcafe-reporter-testrail#readme",
+  "dependencies": {
+    "node-fetch": "^2.6.0"
+  }
+}

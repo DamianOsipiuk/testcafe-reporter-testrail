@@ -1,4 +1,4 @@
-![npm](https://img.shields.io/npm/v/testcafe-reporter-testrail) ![NPM](https://img.shields.io/npm/l/testcafe-reporter-testrail)
+[![NPM](https://img.shields.io/npm/v/testcafe-reporter-testrail)](https://www.npmjs.com/package/testcafe-reporter-testrail) [![NPM](https://img.shields.io/npm/l/testcafe-reporter-testrail)](https://github.com/DamianOsipiuk/testcafe-reporter-testrail/blob/master/LICENSE)
 
 # testcafe-reporter-testrail
 

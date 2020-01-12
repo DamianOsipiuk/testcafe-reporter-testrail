@@ -1,3 +1,5 @@
+![npm](https://img.shields.io/npm/v/testcafe-reporter-testrail) ![NPM](https://img.shields.io/npm/l/testcafe-reporter-testrail)
+
 # testcafe-reporter-testrail
 
 Testcafe reporter plugin that automatically publishes test run details to the TestRail system.

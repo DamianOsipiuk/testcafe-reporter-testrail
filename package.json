@@ -1,12 +1,15 @@
 {
   "name": "testcafe-reporter-testrail",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Testcafe reporter plugin that automatically publishes test run details to the TestRail system.",
   "main": "lib/index.js",
+  "typings": "lib/index.d.ts",
   "engines": {
-    "node": ">=12"
+    "node": ">=8.9"
   },
   "scripts": {
+    "prepare": "npm run build",
+    "build": "tsc",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -27,5 +30,12 @@
   "homepage": "https://github.com/DamianOsipiuk/testcafe-reporter-testrail#readme",
   "dependencies": {
     "node-fetch": "^2.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "^13.7.4",
+    "@types/node-fetch": "^2.5.4",
+    "chalk": "^3.0.0",
+    "moment": "^2.24.0",
+    "typescript": "^3.8.2"
   }
 }

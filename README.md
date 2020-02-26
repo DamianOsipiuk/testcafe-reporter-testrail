@@ -53,7 +53,7 @@ Additional configuration can be provided via ENV variables or configuration file
 | TESTRAIL_SUITE                | Suite name in which test cases are stored.                                                                |    `'Master'`    |
 | TESTRAIL_SUITE_ID             | Suite id in which test cases are stored.                                                                  |        -         |
 | TESTRAIL_CASE_META            | Meta attribute to be used to get TestRail case id mapping.                                                |     `'CID'`      |
-| TESTRAIL_RUN_NAME             | Run name which can contain two placeholders. %DATE% for date and %AGENT% for agent on which test was run. | `%DATE% %AGENT%` |
+| TESTRAIL_RUN_NAME             | Run name which can contain two placeholders. %DATE% for date and %AGENT% for agent on which test was run. | `%DATE% %AGENTS%` |
 | TESTRAIL_RUN_DESCRIPTION      | Additional run description, which can for example contain a link to the CI system.                        |        -         |
 | TESTRAIL_RUN_CLOSE_AFTER_DAYS | After how many days should reporter close old Runs in testrail. 0 means do not close any.                 |        -         |
 | TESTRAIL_UPLOAD_SCREENSHOT    | Should upload screenshots to testrail. Requires test result edit enabled in testrail.                     |      false       |
@@ -75,7 +75,7 @@ Create `.testrailrc` file in the root directory of your project
 | suite             | Suite name in which test cases are stored.                                                                |    `'Master'`    |
 | suiteId           | Suite id in which test cases are stored.                                                                  |        -         |
 | caseMeta          | Meta attribute to be used to get TestRail case id mapping.                                                |     `'CID'`      |
-| runName           | Run name which can contain two placeholders. %DATE% for date and %AGENT% for agent on which test was run. | `%DATE% %AGENT%` |
+| runName           | Run name which can contain two placeholders. %DATE% for date and %AGENT% for agent on which test was run. | `%DATE% %AGENTS%` |
 | runDescription    | Additional run description, which can for example contain a link to the CI system.                        |        -         |
 | runCloseAfterDays | After how many days should reporter close old Runs in testrail. 0 means do not close any.                 |        -         |
 | uploadScreenshots | Should upload screenshots to testrail. Requires test result edit enabled in testrail.                     |      false       |

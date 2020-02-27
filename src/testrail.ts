@@ -1,5 +1,6 @@
 // API reference: http://docs.gurock.com/testrail-api2/start
 
+import FormData from "form-data";
 import fs from "fs";
 import qs, { ParsedUrlQueryInput } from "querystring";
 import fetch from "node-fetch";
@@ -220,18 +221,18 @@ export class TestRail {
       const tests = await this.getTests(runId);
 
       if (options.uploadScreenshots) {
-        testResults.forEach((testResult) => {
+        for (const testResult of testResults) {
           const test = tests.find((test) => test.case_id === testResult.caseId);
           const result = results.find((result) => result.test_id === test?.id);
           if (result) {
-            testResult.testRunInfo.screenshots.forEach(async (screenshot) => {
+            for (const screenshot of testResult.testRunInfo.screenshots) {
               await this.addAttachmentToResult(
                 result.id,
                 screenshot.screenshotPath
               );
-            });
+            }
           }
-        });
+        }
       }
 
       if (results.length == 0) {
@@ -725,18 +726,20 @@ export class TestRail {
 
   // ----- Attachments -----
 
-  addAttachmentToResult = (result_id: number, filePath: string) => {
+  addAttachmentToResult = async (result_id: number, filePath: string) => {
     const url =
       this.host + this.baseUrl + "add_attachment_to_result/" + result_id;
 
-    return fetch(url, {
-      method: "post",
+    const fd = new FormData();
+    fd.append("attachment", fs.createReadStream(filePath));
+
+    const res = await fetch(url, {
+      method: "POST",
       headers: {
-        "Content-Type": "multipart/form-data",
-        accept: "application/json",
         Authorization: this.authHeader,
       },
-      body: fs.createReadStream(filePath),
-    }).then((res) => res.json());
+      body: fd,
+    });
+    return await res.json();
   };
 }

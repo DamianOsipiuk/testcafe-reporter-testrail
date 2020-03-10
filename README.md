@@ -1,95 +1,66 @@
 [![NPM](https://img.shields.io/npm/v/testcafe-reporter-testrail)](https://www.npmjs.com/package/testcafe-reporter-testrail) [![NPM](https://img.shields.io/npm/l/testcafe-reporter-testrail)](https://github.com/DamianOsipiuk/testcafe-reporter-testrail/blob/master/LICENSE) [![NPM](https://img.shields.io/node/v/testcafe-reporter-testrail)](https://github.com/DamianOsipiuk/testcafe-reporter-testrail/blob/master/package.json)
 
-# testcafe-reporter-testrail
+# Description
 
-Testcafe reporter plugin that automatically publishes test run details to the TestRail system.
+Reporter plugin that sends test results to TestRail
 
-# Install
-
-`npm install testcafe-reporter-testrail`
+**It does not provide test output to console, please use with combination with the default reporter**
 
 # Usage
 
-When you run tests from the command line, specify the reporter name by using the `--reporter` option:
+1. Installation
 
-`testcafe chrome 'path/to/test/file.js' --reporter testrail`
+   `npm install testcafe-reporter-testrail --save-dev`
 
-When you use API, pass the reporter name to the reporter() method:
+2. Add reporter to testrail configuration. Make sure to also include **default** reporter if **reporters** option was not provided
 
-```
-testCafe
-    .createRunner()
-    .src('path/to/test/file.js')
-    .browsers('chrome')
-    .reporter('testrail') // <-
-    .run();
-```
+   Command Line:
+
+   ```
+   testcafe chrome tests/* -r spec,testrail:out.xml
+   ```
+
+   API:
+
+   ```
+   testCafe
+       .createRunner()
+       .src('path/to/test/file.js')
+       .browsers('chrome')
+       .reporter(['spec', { name: 'testrail', output: '' }]) // <-
+       .run();
+   ```
+
+3. Provide required options from the configuration section
 
 # Prerequisites
 
-- NodeJS >= 8
-- User account on TestRail instance with generated `API_KEY`
-- Created TestRail project
 - All test cases should have a valid mapping between TestCafe and TestRail. TestRail `Case ID` should be put into TestCafe test metadata. (Example: `test.meta({CID: 'C123'})('test name', async t => { .... });`)
 
-# Additional Configuration
+# Configuration
 
-Additional configuration can be provided via ENV variables or configuration file.
+Configuration can be provided via:
 
-**Keep in mind that you have to provide at least hostname, username, api key and project.**
+- ENV variables
+- configuration file (.testrailrc)
 
 ## Configuring via `ENV`
 
-| ENV Variable                  | Description                                                                                               |     Default      |
-| ----------------------------- | --------------------------------------------------------------------------------------------------------- | :--------------: |
-| TESTRAIL_ENABLE               | Enables TestRail integration.                                                                             |     `false`      |
-| TESTRAIL_HOST                 | Url of the TestRail instance.                                                                             |        -         |
-| TESTRAIL_USER                 | Account name which will be used to push results.                                                          |        -         |
-| TESTRAIL_API_KEY              | API_KEY which can be generated on the profile page in TestRail.                                           |        -         |
-| TESTRAIL_PROJECT              | Project name in which test cases are stored.                                                              |        -         |
-| TESTRAIL_PROJECT_ID           | Project id in which test cases are stored.                                                                |        -         |
-| TESTRAIL_PLAN                 | Plan name in which test run results will be stored.                                                       |        -         |
-| TESTRAIL_PLAN_ID              | Plan id in which test run results will be stored.                                                         |        -         |
-| TESTRAIL_SUITE                | Suite name in which test cases are stored.                                                                |    `'Master'`    |
-| TESTRAIL_SUITE_ID             | Suite id in which test cases are stored.                                                                  |        -         |
-| TESTRAIL_CASE_META            | Meta attribute to be used to get TestRail case id mapping.                                                |     `'CID'`      |
-| TESTRAIL_RUN_NAME             | Run name which can contain two placeholders. %DATE% for date and %AGENT% for agent on which test was run. | `%DATE% %AGENTS%` |
-| TESTRAIL_RUN_DESCRIPTION      | Additional run description, which can for example contain a link to the CI system.                        |        -         |
-| TESTRAIL_RUN_CLOSE_AFTER_DAYS | After how many days should reporter close old Runs in testrail. 0 means do not close any.                 |        -         |
-| TESTRAIL_UPLOAD_SCREENSHOT    | Should upload screenshots to testrail. Requires test result edit enabled in testrail.                     |      false       |
-
-## Configuring via `configuration file`
-
-Create `.testrailrc` file in the root directory of your project
-
-| Option            | Description                                                                                               |     Default      |
-| ----------------- | --------------------------------------------------------------------------------------------------------- | :--------------: |
-| testrailEnabled   | Enables TestRail integration.                                                                             |     `false`      |
-| host              | Url of the TestRail instance.                                                                             |        -         |
-| user              | Account name which will be used to push results.                                                          |        -         |
-| apiKey            | API_KEY which can be generated on the profile page in TestRail.                                           |        -         |
-| project           | Project name in which test cases are stored.                                                              |        -         |
-| projectId         | Project id in which test cases are stored.                                                                |        -         |
-| plan              | Plan name in which test run results will be stored.                                                       |        -         |
-| planId            | Plan id in which test run results will be stored.                                                         |        -         |
-| suite             | Suite name in which test cases are stored.                                                                |    `'Master'`    |
-| suiteId           | Suite id in which test cases are stored.                                                                  |        -         |
-| caseMeta          | Meta attribute to be used to get TestRail case id mapping.                                                |     `'CID'`      |
-| runName           | Run name which can contain two placeholders. %DATE% for date and %AGENT% for agent on which test was run. | `%DATE% %AGENTS%` |
-| runDescription    | Additional run description, which can for example contain a link to the CI system.                        |        -         |
-| runCloseAfterDays | After how many days should reporter close old Runs in testrail. 0 means do not close any.                 |        -         |
-| uploadScreenshots | Should upload screenshots to testrail. Requires test result edit enabled in testrail.                     |      false       |
-
-Example:
-
-```
-{
-  "host": "https://demo.testrail.io/",
-  "user": "john.doe@example.com",
-  "apiKey": "apiKeyHash",
-  "project": "DEMO_PROJECT",
-  "plan": "DEMO_PLAN_1",
-  "suite": "DEMO_SUITE_1",
-  "caseMeta": "CID"
-}
-```
+| ENV Variable                  | Config            | Description                                                                                                                                                                                                                                                                                                            |           Default           | Required |
+| ----------------------------- | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :-------------------------: | :------: |
+| TESTRAIL_ENABLED              | enabled           | Enables TestRail integration.                                                                                                                                                                                                                                                                                          |           `false`           |          |
+| TESTRAIL_HOST                 | host              | URL of the TestRail instance.                                                                                                                                                                                                                                                                                          |                             |  `true`  |
+| TESTRAIL_USER                 | user              | Account name which will be used to push results.                                                                                                                                                                                                                                                                       |                             |  `true`  |
+| TESTRAIL_API_KEY              | apiKey            | API key which can be generated on the profile page in TestRail.                                                                                                                                                                                                                                                        |                             |  `true`  |
+| TESTRAIL_PROJECT_ID           | projectId         | Project id in which test cases are stored. Ex. `P123`                                                                                                                                                                                                                                                                  |                             |  `true`  |
+| TESTRAIL_PLAN_ID              | planId            | Plan id in which test run results will be stored. Ex. `R123`                                                                                                                                                                                                                                                           |                             |          |
+| TESTRAIL_SUITE_ID             | suiteId           | Suite id in which test cases are stored. Ex. `S123`                                                                                                                                                                                                                                                                    |                             |  `true`  |
+| TESTRAIL_CASE_META            | caseMeta          | Meta attribute to be used to get TestRail case id mapping.                                                                                                                                                                                                                                                             |           `'CID'`           |          |
+| TESTRAIL_RUN_NAME             | runName           | Test Run name. Configurable with variables <ul><li>`%BRANCH%` - see config option `branchEnv`</li><li>`%BUILD%` - see config option `buildNoEnv`</li><li>`%DATE%` - see config option `dateFormat`</li></ul>                                                                                                           | `%BRANCH%#%BUILD% - %DATE%` |          |
+| TESTRAIL_RUN_DESCRIPTION      | runDescription    | You can provide you own Test Run description. If this option is not configured, it will contain test results and test coverage.                                                                                                                                                                                        |                             |          |
+| TESTRAIL_REFERENCE            | reference         | String that will be added to the `refs` field in TestRail. This can enable integration with other tools like https://github.com/DamianOsipiuk/testcafe-reporter-testrail/. Configurable with variables <ul><li>`%BRANCH%` - see config option `branchEnv`</li><li>`%BUILD%` - see config option `buildNoEnv`</li></ul> |                             |          |
+| TESTRAIL_BRANCH_ENV           | branchEnv         | Which ENV variable is used to store branch name on which tests are run.                                                                                                                                                                                                                                                |          `BRANCH`           |          |
+| TESTRAIL_BUILD_NO_ENV         | buildNoEnv        | Which ENV variable is used to store build number of tests run.                                                                                                                                                                                                                                                         |       `BUILD_NUMBER`        |          |
+| TESTRAIL_DATE_FORMAT          | dateFormat        | What date format should be used for `%DATE%` placeholder. https://momentjs.com/ formats supported.                                                                                                                                                                                                                     |    `YYYY-MM-DD HH:mm:ss`    |          |
+| TESTRAIL_RUN_CLOSE_AFTER_DAYS | runCloseAfterDays | After how many days should reporter close old Runs in testrail.                                                                                                                                                                                                                                                        |                             |          |
+| TESTRAIL_UPLOAD_SCREENSHOTS   | uploadScreenshots | Should upload screenshots to testrail. Requires test result edit enabled in testrail.                                                                                                                                                                                                                                  |           `false`           |          |

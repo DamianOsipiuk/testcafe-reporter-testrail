@@ -105,8 +105,8 @@ const prepareConfig = (options: Config = {} as any): Config => {
     buildNoEnv: process.env.TESTRAIL_BUILD_NO_ENV || config.buildNoEnv || "BUILD_NUMBER",
     dateFormat: process.env.TESTRAIL_DATE_FORMAT || config.dateFormat || "YYYY-MM-DD HH:mm:ss",
     caseMeta: process.env.TESTRAIL_CASE_META || config.caseMeta || "CID",
-    runCloseAfterDays: Number(process.env.TESTRAIL_RUN_CLOSE_AFTER_DAYS) || config.runCloseAfterDays,
-    uploadScreenshots: process.env.TESTRAIL_UPLOAD_SCREENSHOT == "true" || config.uploadScreenshots || false,
+    runCloseAfterDays: Number(process.env.TESTRAIL_RUN_CLOSE_AFTER_DAYS || config.runCloseAfterDays),
+    uploadScreenshots: process.env.TESTRAIL_UPLOAD_SCREENSHOTS == "true" || config.uploadScreenshots || false,
   };
 };
 
@@ -216,10 +216,10 @@ export class TestcafeTestrailReporter {
             run = existingRun;
             const { value: tests } = await testrailAPI.getTests(existingRun.id);
             const currentCaseIds = tests.map((test) => test.case_id);
-            const additionalDescription = "\n" + this.config.runDescription
+            const additionalDescription = "\n" + this.config.runDescription;
 
             await testrailAPI.updateRun(existingRun.id, {
-              description: existingRun.description.replace(additionalDescription, '') + additionalDescription,
+              description: existingRun.description.replace(additionalDescription, "") + additionalDescription,
               case_ids: [...currentCaseIds, ...caseIdList],
             });
 
@@ -260,13 +260,13 @@ export class TestcafeTestrailReporter {
     if (config.runCloseAfterDays) {
       const { value: runs } = await testrailAPI.getRuns(config.projectId, { is_completed: 0 });
       if (runs?.length) {
-        runs.forEach(async (run) => {
+        for (const run of runs) {
           const shouldClose = moment.unix(run.created_on) <= moment().subtract(config.runCloseAfterDays, "days");
           if (shouldClose) {
             console.info(`[TestRail] Closing test run ${run.id}: ${run.name}`);
             await testrailAPI.closeRun(run.id);
           }
-        });
+        }
       } else {
         console.error("[TestRail] Error during test runs closing");
       }

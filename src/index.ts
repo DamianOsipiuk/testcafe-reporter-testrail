@@ -209,13 +209,13 @@ export class TestcafeTestrailReporter {
           const refs = prepareReference(this.config, this.branch, this.buildNo);
           const caseIdList = this.results.map((result) => result.case_id);
 
-          const existingRun = runs.find((run) => run.refs === refs);
+          const existingRun = runs?.find((run) => run.refs === refs);
 
           let run: Run;
           if (existingRun) {
             run = existingRun;
             const { value: tests } = await testrailAPI.getTests(existingRun.id);
-            const currentCaseIds = tests.map((test) => test.case_id);
+            const currentCaseIds = tests?.map((test) => test.case_id) || [];
             const additionalDescription = "\n" + this.config.runDescription;
 
             await testrailAPI.updateRun(existingRun.id, {

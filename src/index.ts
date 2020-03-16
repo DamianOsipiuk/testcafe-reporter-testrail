@@ -284,9 +284,7 @@ export class TestcafeTestrailReporter {
         const result = results.find((result) => result.test_id === test?.id);
         if (result) {
           for (const screenshot of this.screenshots[testResult.case_id]) {
-            console.log("screenshot", screenshot);
-            const { response, value } = await testrailAPI.addAttachmentToResult(result.id, screenshot.screenshotPath);
-            console.log("response", response, value);
+            await testrailAPI.addAttachmentToResult(result.id, screenshot.screenshotPath);
           }
         } else {
           console.error(

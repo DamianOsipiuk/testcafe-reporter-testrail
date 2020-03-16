@@ -9,7 +9,6 @@ interface Config<T = number> {
   user: string;
   apiKey: string;
   projectId: T;
-  planId?: T;
   suiteId: T;
   runName: string;
   runDescription?: string;
@@ -22,29 +21,17 @@ interface Config<T = number> {
   uploadScreenshots: boolean;
 }
 
-export interface TestResult {
-  name: string;
-  meta: Meta;
-  caseId: number;
-  testRunInfo: TestRunInfo;
-  testStatus: {
-    value: TestStatus;
-    text: string;
-    color: string;
-  };
-}
-
-export interface Meta {
+interface Meta {
   [key: string]: string;
 }
 
-export interface TaskResult {
+interface TaskResult {
   passedCount: number;
   failedCount: number;
   skippedCount: number;
 }
 
-export interface Screenshot {
+interface Screenshot {
   screenshotPath: string;
   thumbnailPath: string;
   userAgent: string;
@@ -52,7 +39,7 @@ export interface Screenshot {
   takenOnFail: boolean;
 }
 
-export interface TestRunInfo {
+interface TestRunInfo {
   errs: any[];
   warnings: string[];
   durationMs: number;
@@ -96,7 +83,6 @@ const prepareConfig = (options: Config = {} as any): Config => {
     user: process.env.TESTRAIL_USER || config.user,
     apiKey: process.env.TESTRAIL_API_KEY || config.apiKey,
     projectId: Number((process.env.TESTRAIL_PROJECT_ID || config.projectId || "").replace("P", "").trim()),
-    planId: Number((process.env.TESTRAIL_PLAN_ID || config.planId || "").replace("R", "").trim()),
     suiteId: Number((process.env.TESTRAIL_SUITE_ID || config.suiteId || "").replace("S", "").trim()),
     runName: process.env.TESTRAIL_RUN_NAME || config.runName || "%BRANCH%#%BUILD% - %DATE%",
     runDescription: process.env.TESTRAIL_RUN_DESCRIPTION || config.runDescription,
@@ -123,7 +109,7 @@ const prepareReference = (config: Config, branch: string, buildNo: string) => {
   return config.reference ? config.reference.replace("%BRANCH%", branch).replace("%BUILD%", buildNo) : "";
 };
 
-export class TestcafeTestrailReporter {
+class TestcafeTestrailReporter {
   noColors: boolean;
   formatError: any;
 
@@ -153,7 +139,7 @@ export class TestcafeTestrailReporter {
 
   reportFixtureStart = async () => {};
 
-  async reportTestDone(name: string, testRunInfo: TestRunInfo, meta: Meta) {
+  reportTestDone = async (name: string, testRunInfo: TestRunInfo, meta: Meta, formatError: any) => {
     const hasErr = testRunInfo.errs.length;
 
     let testStatus = null;
@@ -174,7 +160,7 @@ export class TestcafeTestrailReporter {
     if (caseId > 0) {
       const errorLog = testRunInfo.errs
         .map((x: object) => {
-          const formatted = this.formatError(x).replace(
+          const formatted = formatError(x).replace(
             /[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g,
             ""
           );
@@ -194,7 +180,7 @@ export class TestcafeTestrailReporter {
     } else {
       console.warn(`[TestRail] Test missing the TestRail Case ID in test metadata: ${name}`);
     }
-  }
+  };
 
   reportTaskDone = async (endTime: number, passed: number, warnings: string[], result: TaskResult) => {
     const { enabled, host, user, apiKey, projectId } = this.config;
@@ -234,19 +220,14 @@ export class TestcafeTestrailReporter {
               refs,
             };
 
-            if (this.config.planId) {
-              const { value: planEntry } = await testrailAPI.addPlanEntry(this.config.planId, payload);
-              run = planEntry.runs[0];
-            } else {
-              await this.closeOldRuns(testrailAPI, this.config);
-              const { value: newRun } = await testrailAPI.addRun(this.config.projectId, payload);
-              run = newRun;
-            }
+            const { value: newRun } = await testrailAPI.addRun(this.config.projectId, payload);
+            run = newRun;
 
             console.info(`[TestRail] Test run added successfully: ${runName}`);
           }
 
           await this.publishTestResults(testrailAPI, run, this.results);
+          await this.closeOldRuns(testrailAPI, this.config);
         } else {
           console.warn("[TestRail] No test case data found to publish");
         }
@@ -258,13 +239,14 @@ export class TestcafeTestrailReporter {
 
   closeOldRuns = async (testrailAPI: TestRail, config: Config) => {
     if (config.runCloseAfterDays) {
+      console.info("[TestRail] Closing old test runs...");
       const { value: runs } = await testrailAPI.getRuns(config.projectId, { is_completed: 0 });
-      if (runs?.length) {
-        for (const run of runs) {
-          const shouldClose = moment.unix(run.created_on) <= moment().subtract(config.runCloseAfterDays, "days");
+      if (runs.length) {
+        for (let i = 0; i < runs.length; i++) {
+          const shouldClose = moment.unix(runs[i].created_on) <= moment().subtract(config.runCloseAfterDays, "days");
           if (shouldClose) {
-            console.info(`[TestRail] Closing test run ${run.id}: ${run.name}`);
-            await testrailAPI.closeRun(run.id);
+            console.info(`[TestRail] Closing test run ${runs[i].id}: ${runs[i].name}`);
+            await testrailAPI.closeRun(runs[i].id);
           }
         }
       } else {
@@ -279,16 +261,18 @@ export class TestcafeTestrailReporter {
     const { value: tests } = await testrailAPI.getTests(runId);
 
     if (this.config.uploadScreenshots) {
-      for (const testResult of resultsToPush) {
-        const test = tests.find((test) => test.case_id === testResult.case_id);
+      console.info("[TestRail] Uploading screenshots...");
+      for (let i = 0; i < resultsToPush.length; i++) {
+        const test = tests.find((test) => test.case_id === resultsToPush[0].case_id);
         const result = results.find((result) => result.test_id === test?.id);
         if (result) {
-          for (const screenshot of this.screenshots[testResult.case_id]) {
-            await testrailAPI.addAttachmentToResult(result.id, screenshot.screenshotPath);
+          const screenshots = this.screenshots[resultsToPush[0].case_id];
+          for (let j = 0; j < screenshots.length; j++) {
+            await testrailAPI.addAttachmentToResult(result.id, screenshots[j].screenshotPath);
           }
         } else {
           console.error(
-            `[TestRail] Could not upload screenshot for a failed test. Case ID: ${testResult.caseId}. Test ID: ${test?.id}`
+            `[TestRail] Could not upload screenshot for a failed test. Case ID: ${resultsToPush[0].caseId}. Test ID: ${test?.id}`
           );
         }
       }
@@ -302,6 +286,16 @@ export class TestcafeTestrailReporter {
   };
 }
 
-module.exports = function() {
-  return new TestcafeTestrailReporter();
+/// This weird setup is required due to TestCafe prototype injection method.
+export = () => {
+  const reporter = new TestcafeTestrailReporter();
+  return {
+    reportTaskStart: reporter.reportTaskStart,
+    reportFixtureStart: reporter.reportFixtureStart,
+    async reportTestDone(name: string, testRunInfo: TestRunInfo, meta: Meta): Promise<any> {
+      // @ts-ignore
+      return reporter.reportTestDone(name, testRunInfo, meta, this.formatError.bind(this));
+    },
+    reportTaskDone: reporter.reportTaskDone,
+  };
 };

@@ -267,8 +267,10 @@ class TestcafeTestrailReporter {
         const result = results.find((result) => result.test_id === test?.id);
         if (result) {
           const screenshots = this.screenshots[resultsToPush[0].case_id];
-          for (let j = 0; j < screenshots.length; j++) {
-            await testrailAPI.addAttachmentToResult(result.id, screenshots[j].screenshotPath);
+          if (screenshots) {
+            for (let j = 0; j < screenshots.length; j++) {
+              await testrailAPI.addAttachmentToResult(result.id, screenshots[j].screenshotPath);
+            }
           }
         } else {
           console.error(

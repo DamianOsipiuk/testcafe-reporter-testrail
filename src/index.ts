@@ -263,10 +263,10 @@ class TestcafeTestrailReporter {
     if (this.config.uploadScreenshots) {
       console.info("[TestRail] Uploading screenshots...");
       for (let i = 0; i < resultsToPush.length; i++) {
-        const test = tests.find((test) => test.case_id === resultsToPush[0].case_id);
+        const test = tests.find((test) => test.case_id === resultsToPush[i].case_id);
         const result = results.find((result) => result.test_id === test?.id);
         if (result) {
-          const screenshots = this.screenshots[resultsToPush[0].case_id];
+          const screenshots = this.screenshots[resultsToPush[i].case_id];
           if (screenshots) {
             for (let j = 0; j < screenshots.length; j++) {
               await testrailAPI.addAttachmentToResult(result.id, screenshots[j].screenshotPath);
@@ -274,7 +274,7 @@ class TestcafeTestrailReporter {
           }
         } else {
           console.error(
-            `[TestRail] Could not upload screenshot for a failed test. Case ID: ${resultsToPush[0].caseId}. Test ID: ${test?.id}`
+            `[TestRail] Could not upload screenshot for a failed test. Case ID: ${resultsToPush[i].caseId}. Test ID: ${test?.id}`
           );
         }
       }

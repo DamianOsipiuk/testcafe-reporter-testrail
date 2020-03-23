@@ -1,6 +1,6 @@
 {
   "name": "testcafe-reporter-testrail",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "description": "Testcafe reporter plugin that automatically publishes test run details to the TestRail system.",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",

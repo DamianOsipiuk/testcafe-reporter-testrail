@@ -236,6 +236,14 @@ class TestcafeTestrailReporter {
           const caseIdList = this.results.map((result) => result.case_id);
 
           const testrailAPI = new TestRail(host, user, apiKey);
+          const { value: caseList } = await throwOnApiError(testrailAPI.getCases(projectId, { suite_id: suiteId }));
+          const existingCaseIds = caseList.map((item) => item.id);
+
+          caseIdList.forEach((id) => {
+            if(!existingCaseIds.includes(id)) {
+              console.error(`[TestRail] All TestRail mappings should be valid. Following test case id does not exist in TestRail: ${id}.`);
+            }
+          });
 
           const { value: runs } = await throwOnApiError(testrailAPI.getRuns(projectId, { is_completed: 0 }));
           const existingRun = runs?.find((run) => run.refs === refs);
@@ -342,5 +350,6 @@ export = () => {
       return reporter.reportTestDone(name, testRunInfo, meta, this.formatError.bind(this));
     },
     reportTaskDone: reporter.reportTaskDone,
+    reporter,
   };
 };

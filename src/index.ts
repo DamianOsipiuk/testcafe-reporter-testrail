@@ -71,7 +71,10 @@ const Status = {
 const loadJSON = (file: string) => {
   const data = fs.readFileSync(file, { encoding: "utf8" });
 
-  return JSON.parse(data);
+  if (data) {
+    return JSON.parse(data);
+  }
+  return {};
 };
 
 const prepareConfig = (options: Config = {} as any): Config => {
@@ -91,7 +94,7 @@ const prepareConfig = (options: Config = {} as any): Config => {
     buildNoEnv: process.env.TESTRAIL_BUILD_NO_ENV || config.buildNoEnv || "BUILD_NUMBER",
     dateFormat: process.env.TESTRAIL_DATE_FORMAT || config.dateFormat || "YYYY-MM-DD HH:mm:ss",
     caseMeta: process.env.TESTRAIL_CASE_META || config.caseMeta || "CID",
-    runCloseAfterDays: Number(process.env.TESTRAIL_RUN_CLOSE_AFTER_DAYS || config.runCloseAfterDays),
+    runCloseAfterDays: Number(process.env.TESTRAIL_RUN_CLOSE_AFTER_DAYS || config.runCloseAfterDays) || 0,
     uploadScreenshots: process.env.TESTRAIL_UPLOAD_SCREENSHOTS == "true" || config.uploadScreenshots || false,
   };
 };
@@ -107,6 +110,47 @@ const prepareReportName = (config: Config, branch: string, buildNo: string, user
 
 const prepareReference = (config: Config, branch: string, buildNo: string) => {
   return config.reference ? config.reference.replace("%BRANCH%", branch).replace("%BUILD%", buildNo) : "";
+};
+
+const verifyConfig = (config: Config) => {
+  const { enabled, host, user, apiKey, projectId, suiteId } = config;
+  if (enabled) {
+    if (!host) {
+      console.log("[TestRail] Hostname was not provided.");
+    }
+
+    if (!user || !apiKey) {
+      console.log("[TestRail] Username or api key was not provided.");
+    }
+
+    if (!projectId) {
+      console.log("[TestRail] Project id was not provided.");
+    }
+
+    if (!suiteId) {
+      console.log("[TestRail] Suite id was not provided.");
+    }
+
+    if (host && user && apiKey && projectId && suiteId) {
+      return true;
+    }
+  }
+
+  return false;
+};
+
+const throwOnApiError = async <T>(apiResult: Promise<T>): Promise<T> => {
+  const { response, value } = (await apiResult) as any;
+  if (response.status >= 400) {
+    console.error("[TestRail] Error during API request");
+    throw {
+      url: response.url,
+      status: response.status,
+      message: value,
+    };
+  }
+
+  return Promise.resolve(({ response, value } as any) as T);
 };
 
 class TestcafeTestrailReporter {
@@ -178,90 +222,89 @@ class TestcafeTestrailReporter {
         this.screenshots[caseId] = testRunInfo.screenshots;
       }
     } else {
-      console.warn(`[TestRail] Test missing the TestRail Case ID in test metadata: ${name}`);
+      console.log(`[TestRail] Test missing the TestRail Case ID in test metadata: ${name}`);
     }
   };
 
   reportTaskDone = async (endTime: number, passed: number, warnings: string[], result: TaskResult) => {
-    const { enabled, host, user, apiKey, projectId } = this.config;
-    try {
-      if (enabled && host && user && apiKey) {
+    const { host, user, apiKey, projectId, suiteId, runDescription } = this.config;
+    if (verifyConfig(this.config)) {
+      try {
         if (this.results.length) {
-          const testrailAPI = new TestRail(host, user, apiKey);
-
-          const { value: runs } = await testrailAPI.getRuns(projectId, { is_completed: 0 });
-
           const runName = prepareReportName(this.config, this.branch, this.buildNo, this.userAgents);
           const refs = prepareReference(this.config, this.branch, this.buildNo);
           const caseIdList = this.results.map((result) => result.case_id);
 
+          const testrailAPI = new TestRail(host, user, apiKey);
+
+          const { value: runs } = await throwOnApiError(testrailAPI.getRuns(projectId, { is_completed: 0 }));
           const existingRun = runs?.find((run) => run.refs === refs);
 
           let run: Run;
           if (existingRun) {
             run = existingRun;
-            const { value: tests } = await testrailAPI.getTests(existingRun.id);
+            const { value: tests } = await throwOnApiError(testrailAPI.getTests(existingRun.id));
             const currentCaseIds = tests?.map((test) => test.case_id) || [];
-            const additionalDescription = "\n" + this.config.runDescription;
+            const additionalDescription = "\n" + runDescription;
 
-            await testrailAPI.updateRun(existingRun.id, {
-              description: existingRun.description.replace(additionalDescription, "") + additionalDescription,
-              case_ids: [...currentCaseIds, ...caseIdList],
-            });
+            await throwOnApiError(
+              testrailAPI.updateRun(existingRun.id, {
+                description: existingRun.description.replace(additionalDescription, "") + additionalDescription,
+                case_ids: [...currentCaseIds, ...caseIdList],
+              })
+            );
 
-            console.info(`[TestRail] Test run updated successfully: ${runName}`);
+            console.log(`[TestRail] Test run updated successfully: ${runName}`);
           } else {
             const payload = {
-              suite_id: this.config.suiteId,
+              suite_id: suiteId,
               include_all: false,
               case_ids: caseIdList,
               name: runName,
-              description: this.config.runDescription,
+              description: runDescription,
               refs,
             };
 
-            const { value: newRun } = await testrailAPI.addRun(this.config.projectId, payload);
+            const { value: newRun } = await throwOnApiError(testrailAPI.addRun(projectId, payload));
             run = newRun;
 
-            console.info(`[TestRail] Test run added successfully: ${runName}`);
+            console.log(`[TestRail] Test run added successfully: ${runName}`);
           }
 
           await this.publishTestResults(testrailAPI, run, this.results);
           await this.closeOldRuns(testrailAPI, this.config);
         } else {
-          console.warn("[TestRail] No test case data found to publish");
+          console.log("[TestRail] No test case data found to publish");
         }
+      } catch (error) {
+        console.error("[TestRail] Sending report to TestRail failed", error);
+        throw error;
       }
-    } catch (error) {
-      console.error("[TestRail] Sending report to TestRail failed", error.toString());
     }
   };
 
   closeOldRuns = async (testrailAPI: TestRail, config: Config) => {
     if (config.runCloseAfterDays) {
-      console.info("[TestRail] Closing old test runs...");
-      const { value: runs } = await testrailAPI.getRuns(config.projectId, { is_completed: 0 });
+      const { value: runs } = await throwOnApiError(testrailAPI.getRuns(config.projectId, { is_completed: 0 }));
       if (runs.length) {
         for (let i = 0; i < runs.length; i++) {
           const shouldClose = moment.unix(runs[i].created_on) <= moment().subtract(config.runCloseAfterDays, "days");
           if (shouldClose) {
-            console.info(`[TestRail] Closing test run ${runs[i].id}: ${runs[i].name}`);
-            await testrailAPI.closeRun(runs[i].id);
+            console.log(`[TestRail] Closing test run ${runs[i].id}: ${runs[i].name}`);
+            await throwOnApiError(testrailAPI.closeRun(runs[i].id));
           }
         }
-      } else {
-        console.error("[TestRail] Error during test runs closing");
       }
     }
   };
 
   publishTestResults = async (testrailAPI: TestRail, run: Run, resultsToPush: AddResultForCase[]) => {
     const runId = run.id;
-    const { value: results } = await testrailAPI.addResultsForCases(runId, resultsToPush);
-    const { value: tests } = await testrailAPI.getTests(runId);
+    const { value: results } = await throwOnApiError(testrailAPI.addResultsForCases(runId, resultsToPush));
+    const { value: tests } = await throwOnApiError(testrailAPI.getTests(runId));
 
     if (this.config.uploadScreenshots) {
-      console.info("[TestRail] Uploading screenshots...");
+      console.log("[TestRail] Uploading screenshots...");
       for (let i = 0; i < resultsToPush.length; i++) {
         const test = tests.find((test) => test.case_id === resultsToPush[i].case_id);
         const result = results.find((result) => result.test_id === test?.id);
@@ -269,7 +312,7 @@ class TestcafeTestrailReporter {
           const screenshots = this.screenshots[resultsToPush[i].case_id];
           if (screenshots) {
             for (let j = 0; j < screenshots.length; j++) {
-              await testrailAPI.addAttachmentToResult(result.id, screenshots[j].screenshotPath);
+              await throwOnApiError(testrailAPI.addAttachmentToResult(result.id, screenshots[j].screenshotPath));
             }
           }
         } else {
@@ -281,9 +324,9 @@ class TestcafeTestrailReporter {
     }
 
     if (results.length == 0) {
-      console.info("[TestRail] No Data has been published to TestRail");
+      console.log("[TestRail] No data has been published to TestRail");
     } else {
-      console.info("[TestRail] Test results added to the TestRail successfully");
+      console.log("[TestRail] Test results added to the TestRail successfully");
     }
   };
 }

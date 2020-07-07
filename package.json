@@ -8,7 +8,7 @@
   ],
   "typings": "lib/index.d.ts",
   "engines": {
-    "node": ">=12"
+    "node": ">=10.13"
   },
   "scripts": {
     "prepare": "npm run build",
@@ -31,13 +31,15 @@
   },
   "homepage": "https://github.com/DamianOsipiuk/testcafe-reporter-testrail#readme",
   "dependencies": {
-    "moment": "^2.24.0",
-    "testrail-js-api": "^0.1.5"
+    "moment": "^2.27.0",
+    "testrail-js-api": "^0.1.6"
   },
   "devDependencies": {
-    "@types/node": "^13.11.1",
-    "@types/node-fetch": "^2.5.5",
-    "chalk": "^4.0.0",
-    "typescript": "^3.8.3"
+    "@types/jest": "^26.0.4",
+    "@types/node": "^14.0.19",
+    "@types/node-fetch": "^2.5.7",
+    "jest": "^26.1.0",
+    "ts-jest": "^26.1.1",
+    "typescript": "^3.9.6"
   }
 }

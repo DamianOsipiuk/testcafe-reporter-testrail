@@ -10,6 +10,7 @@ interface Config<T = number> {
   apiKey: string;
   projectId: T;
   suiteId: T;
+  runId: T;
   runName: string;
   runDescription?: string;
   reference?: string;
@@ -96,6 +97,7 @@ const prepareConfig = (options: Config = {} as any): Config => {
     caseMeta: process.env.TESTRAIL_CASE_META || config.caseMeta || "CID",
     runCloseAfterDays: Number(process.env.TESTRAIL_RUN_CLOSE_AFTER_DAYS || config.runCloseAfterDays) || 0,
     uploadScreenshots: process.env.TESTRAIL_UPLOAD_SCREENSHOTS == "true" || config.uploadScreenshots || false,
+    runId: Number((process.env.TESTRAIL_Run_ID || config.runId || "").replace("R", "").trim())
   };
 };
 
@@ -227,7 +229,7 @@ class TestcafeTestrailReporter {
   };
 
   reportTaskDone = async (endTime: number, passed: number, warnings: string[], result: TaskResult) => {
-    const { host, user, apiKey, projectId, suiteId, runDescription } = this.config;
+    const { host, user, apiKey, projectId, suiteId, runDescription, runId } = this.config;
     if (verifyConfig(this.config)) {
       try {
         if (this.results.length) {
@@ -244,39 +246,42 @@ class TestcafeTestrailReporter {
               console.error(`[TestRail] All TestRail mappings should be valid. Following test case id does not exist in TestRail: ${id}.`);
             }
           });
-
-          const { value: runs } = await throwOnApiError(testrailAPI.getRuns(projectId, { is_completed: 0 }));
-          const existingRun = runs?.find((run) => run.refs === refs);
-
+          let existingRun: Run | undefined;
           let run: Run;
-          if (existingRun) {
-            run = existingRun;
-            const { value: tests } = await throwOnApiError(testrailAPI.getTests(existingRun.id));
-            const currentCaseIds = tests?.map((test) => test.case_id) || [];
-            const additionalDescription = "\n" + runDescription;
-
-            await throwOnApiError(
-              testrailAPI.updateRun(existingRun.id, {
-                description: existingRun.description.replace(additionalDescription, "") + additionalDescription,
-                case_ids: [...currentCaseIds, ...caseIdList],
-              })
-            );
-
-            console.log(`[TestRail] Test run updated successfully: ${runName}`);
+          if(runId) {
+            const { value: returnedRun } = await throwOnApiError(testrailAPI.getRun(runId));
+            run = returnedRun
           } else {
-            const payload = {
-              suite_id: suiteId,
-              include_all: false,
-              case_ids: caseIdList,
-              name: runName,
-              description: runDescription,
-              refs,
-            };
+            const { value: runs } = await throwOnApiError(testrailAPI.getRuns(projectId, { is_completed: 0 }));
+            existingRun = runs?.find((run) => run.refs === refs);
+            if (existingRun) {
+              run = existingRun;
+              const { value: tests } = await throwOnApiError(testrailAPI.getTests(existingRun.id));
+              const currentCaseIds = tests?.map((test) => test.case_id) || [];
+              const additionalDescription = "\n" + runDescription;
 
-            const { value: newRun } = await throwOnApiError(testrailAPI.addRun(projectId, payload));
-            run = newRun;
-
-            console.log(`[TestRail] Test run added successfully: ${runName}`);
+              await throwOnApiError(
+                testrailAPI.updateRun(existingRun.id, {
+                  description: existingRun.description ? existingRun.description.replace(additionalDescription, "") : "" + additionalDescription,
+                  case_ids: [...currentCaseIds, ...caseIdList],
+                })
+              );
+              console.log(`[TestRail] Test run updated successfully: ${runName}`);
+            } else {
+              const payload = {
+                suite_id: suiteId,
+                include_all: false,
+                case_ids: caseIdList,
+                name: runName,
+                description: runDescription,
+                refs,
+              };
+  
+              const { value: newRun } = await throwOnApiError(testrailAPI.addRun(projectId, payload));
+              run = newRun;
+  
+              console.log(`[TestRail] Test run added successfully: ${runName}`);
+            }
           }
 
           await this.publishTestResults(testrailAPI, run, this.results);

@@ -198,6 +198,40 @@ describe("Reporter Plugin", () => {
       expect(errorMock).toBeCalledTimes(0);
       expect(fetchMock).toBeCalledTimes(0);
     });
+
+    test("using existing run", async () => {
+
+      const existingRunConfig: any = {
+        ...config,
+        runId: "R123"
+      };
+  
+      fsMock.mockReturnValue(JSON.stringify(existingRunConfig));
+
+      const plugin = TestCafeReporterTestrail();
+      const testInfo: any = {
+        skipped: false,
+        errs: [],
+        screenshots: ["screesnot1"],
+      };
+      const meta: any = {
+        CID: "C123",
+      };
+
+      const expectedResult = [
+        {
+          case_id: 123,
+          comment: "Test PASSED\n",
+          status_id: 1,
+        },
+      ];
+
+      await plugin.reportTestDone.call(injectedScope, "test passed", testInfo, meta);
+      expect(plugin.reporter.results).toStrictEqual(expectedResult);
+      expect(logMock).toBeCalledTimes(0);
+      expect(errorMock).toBeCalledTimes(0);
+      expect(fetchMock).toBeCalledTimes(0);
+    });
   });
 
   describe("reportTaskDone", () => {

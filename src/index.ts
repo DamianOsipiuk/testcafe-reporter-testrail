@@ -20,7 +20,7 @@ interface Config<T = number> {
   caseMeta: string;
   runCloseAfterDays?: number;
   uploadScreenshots: boolean;
-  runCreatedManually: boolean
+  updateRunTestCases: boolean
 }
 
 interface Meta {
@@ -99,7 +99,7 @@ const prepareConfig = (options: Config = {} as any): Config => {
     runCloseAfterDays: Number(process.env.TESTRAIL_RUN_CLOSE_AFTER_DAYS || config.runCloseAfterDays) || 0,
     uploadScreenshots: process.env.TESTRAIL_UPLOAD_SCREENSHOTS == "true" || config.uploadScreenshots || false,
     runId: Number((process.env.TESTRAIL_RUN_ID || config.runId || "").replace("R", "").trim()),
-    runCreatedManually: process.env.TESTRAIL_RUN_CREATED_MANUALLY == "true" || config.runCreatedManually || false
+    updateRunTestCases: process.env.TESTRAIL_UPDATE_RUN_TEST_CASES == "true" || config.updateRunTestCases !== false
   };
 };
 
@@ -113,7 +113,7 @@ const prepareReportName = (config: Config, branch: string, buildNo: string, user
 };
 
 const prepareRun = async(testrailAPI: TestRail, config: Config, runName: any, refs: any, caseIdList: any): Promise<Run> => {
-  const { projectId, suiteId, runDescription, runId, runCreatedManually } = config;
+  const { projectId, suiteId, runDescription, runId, updateRunTestCases } = config;
   let existingRun: Run | undefined;
 
   if(runId) {
@@ -124,7 +124,7 @@ const prepareRun = async(testrailAPI: TestRail, config: Config, runName: any, re
     existingRun = runs?.find((run) => run.refs === refs);
   }
 
-  if(runCreatedManually) {
+  if(updateRunTestCases) {
     if (existingRun) {
       return existingRun
     } else {

@@ -124,11 +124,11 @@ const prepareRun = async(testrailAPI: TestRail, config: Config, runName: any, re
     existingRun = runs?.find((run) => run.refs === refs);
   }
 
-  if(updateRunTestCases) {
+  if(!updateRunTestCases) {
     if (existingRun) {
       return existingRun
     } else {
-      throw new Error(`[TestRail] Flag 'runCreatedManually' enabled but the run was not found, please create it`)
+      throw new Error(`[TestRail] Flag 'updateRunTestCases' enabled but the run was not found, please create it`)
     }
   } else if (existingRun) {
     const { value: tests } = await throwOnApiError(testrailAPI.getTests(existingRun.id));

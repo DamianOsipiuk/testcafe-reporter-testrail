@@ -71,11 +71,14 @@ const Status = {
 };
 
 const loadJSON = (file: string) => {
-  const data = fs.readFileSync(file, { encoding: "utf8" });
+  try {
+    const data = fs.readFileSync(file, { encoding: "utf8" });
 
-  if (data) {
-    return JSON.parse(data);
-  }
+    if (data) {
+      return JSON.parse(data);
+    }
+  } catch {}
+
   return {};
 };
 

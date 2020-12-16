@@ -196,10 +196,14 @@ const prepareRun = async (
     );
     const currentCaseIds = tests?.map((test) => test.case_id) || [];
     const additionalDescription = "\n" + runDescription;
+    const newDescription = existingRun.description
+      ? existingRun.description.replace(additionalDescription, "") +
+        additionalDescription
+      : additionalDescription;
 
     await throwOnApiError(
       testrailAPI.updateRun(existingRun.id, {
-        description: existingRun.description.replace(additionalDescription, "") + additionalDescription,
+        description: newDescription,
         case_ids: [...currentCaseIds, ...caseIdList],
       })
     );

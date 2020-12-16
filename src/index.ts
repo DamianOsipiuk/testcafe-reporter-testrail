@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 import moment from "moment";
 import { TestRail, TestStatus, Run, AddResultForCase } from "testrail-js-api";
+import { Response } from "node-fetch";
 
 interface Config<T = number> {
   enabled: boolean;
@@ -20,7 +21,7 @@ interface Config<T = number> {
   caseMeta: string;
   runCloseAfterDays?: number;
   uploadScreenshots: boolean;
-  updateRunTestCases: boolean
+  updateRunTestCases: boolean;
 }
 
 interface Meta {
@@ -42,7 +43,7 @@ interface Screenshot {
 }
 
 interface TestRunInfo {
-  errs: any[];
+  errs: Record<string, unknown>[];
   warnings: string[];
   durationMs: number;
   unstable: boolean;
@@ -77,36 +78,74 @@ const loadJSON = (file: string) => {
     if (data) {
       return JSON.parse(data);
     }
-  } catch {}
+  } catch (error) {
+    // Ignore error when file does not exist or it's malformed
+  }
 
   return {};
 };
 
-const prepareConfig = (options: Config = {} as any): Config => {
-  const config: Config<string> = Object.assign(loadJSON(path.join(process.cwd(), ".testrailrc")), options);
+const prepareConfig = (options: Config = {} as Config): Config => {
+  const config: Config<string> = Object.assign(
+    loadJSON(path.join(process.cwd(), ".testrailrc")),
+    options
+  );
 
   return {
     enabled: process.env.TESTRAIL_ENABLED === "true" || config.enabled || false,
     host: process.env.TESTRAIL_HOST || config.host,
     user: process.env.TESTRAIL_USER || config.user,
     apiKey: process.env.TESTRAIL_API_KEY || config.apiKey,
-    projectId: Number((process.env.TESTRAIL_PROJECT_ID || config.projectId || "").replace("P", "").trim()),
-    suiteId: Number((process.env.TESTRAIL_SUITE_ID || config.suiteId || "").replace("S", "").trim()),
-    runName: process.env.TESTRAIL_RUN_NAME || config.runName || "%BRANCH%#%BUILD% - %DATE%",
-    runDescription: process.env.TESTRAIL_RUN_DESCRIPTION || config.runDescription,
+    projectId: Number(
+      (process.env.TESTRAIL_PROJECT_ID || config.projectId || "")
+        .replace("P", "")
+        .trim()
+    ),
+    suiteId: Number(
+      (process.env.TESTRAIL_SUITE_ID || config.suiteId || "")
+        .replace("S", "")
+        .trim()
+    ),
+    runId: Number(
+      (process.env.TESTRAIL_RUN_ID || config.runId || "")
+        .replace("R", "")
+        .trim()
+    ),
+    runName:
+      process.env.TESTRAIL_RUN_NAME ||
+      config.runName ||
+      "%BRANCH%#%BUILD% - %DATE%",
+    runDescription:
+      process.env.TESTRAIL_RUN_DESCRIPTION || config.runDescription,
     reference: process.env.TESTRAIL_REFERENCE || config.reference,
     branchEnv: process.env.TESTRAIL_BRANCH_ENV || config.branchEnv || "BRANCH",
-    buildNoEnv: process.env.TESTRAIL_BUILD_NO_ENV || config.buildNoEnv || "BUILD_NUMBER",
-    dateFormat: process.env.TESTRAIL_DATE_FORMAT || config.dateFormat || "YYYY-MM-DD HH:mm:ss",
+    buildNoEnv:
+      process.env.TESTRAIL_BUILD_NO_ENV || config.buildNoEnv || "BUILD_NUMBER",
+    dateFormat:
+      process.env.TESTRAIL_DATE_FORMAT ||
+      config.dateFormat ||
+      "YYYY-MM-DD HH:mm:ss",
     caseMeta: process.env.TESTRAIL_CASE_META || config.caseMeta || "CID",
-    runCloseAfterDays: Number(process.env.TESTRAIL_RUN_CLOSE_AFTER_DAYS || config.runCloseAfterDays) || 0,
-    uploadScreenshots: process.env.TESTRAIL_UPLOAD_SCREENSHOTS == "true" || config.uploadScreenshots || false,
-    runId: Number((process.env.TESTRAIL_RUN_ID || config.runId || "").replace("R", "").trim()),
-    updateRunTestCases: process.env.TESTRAIL_UPDATE_RUN_TEST_CASES == "true" || config.updateRunTestCases !== false
+    runCloseAfterDays:
+      Number(
+        process.env.TESTRAIL_RUN_CLOSE_AFTER_DAYS || config.runCloseAfterDays
+      ) || 0,
+    uploadScreenshots:
+      process.env.TESTRAIL_UPLOAD_SCREENSHOTS == "true" ||
+      config.uploadScreenshots ||
+      false,
+    updateRunTestCases:
+      process.env.TESTRAIL_UPDATE_RUN_TEST_CASES == "true" ||
+      config.updateRunTestCases !== false,
   };
 };
 
-const prepareReportName = (config: Config, branch: string, buildNo: string, userAgents: string[]) => {
+const prepareReportName = (
+  config: Config,
+  branch: string,
+  buildNo: string,
+  userAgents: string[]
+) => {
   const date = moment().format(config.dateFormat);
   return config.runName
     .replace("%BRANCH%", branch)
@@ -115,26 +154,46 @@ const prepareReportName = (config: Config, branch: string, buildNo: string, user
     .replace("%AGENTS%", `(${userAgents.join(", ")})`);
 };
 
-const prepareRun = async(testrailAPI: TestRail, config: Config, runName: any, refs: any, caseIdList: any): Promise<Run> => {
-  const { projectId, suiteId, runDescription, runId, updateRunTestCases } = config;
+const prepareRun = async (
+  testrailAPI: TestRail,
+  config: Config,
+  runName: string,
+  refs: string,
+  caseIdList: number[]
+): Promise<Run> => {
+  const {
+    projectId,
+    suiteId,
+    runDescription,
+    runId,
+    updateRunTestCases,
+  } = config;
   let existingRun: Run | undefined;
 
-  if(runId) {
-    const { value: returnedRun } = await throwOnApiError(testrailAPI.getRun(runId));
-    existingRun = returnedRun
+  if (runId) {
+    const { value: returnedRun } = await throwOnApiError(
+      testrailAPI.getRun(runId)
+    );
+    existingRun = returnedRun;
   } else {
-    const { value: runs } = await throwOnApiError(testrailAPI.getRuns(projectId, { is_completed: 0 }));
+    const { value: runs } = await throwOnApiError(
+      testrailAPI.getRuns(projectId, { is_completed: 0 })
+    );
     existingRun = runs?.find((run) => run.refs === refs);
   }
 
-  if(!updateRunTestCases) {
+  if (!updateRunTestCases) {
     if (existingRun) {
-      return existingRun
+      return existingRun;
     } else {
-      throw new Error(`[TestRail] Flag 'updateRunTestCases' enabled but the run was not found, please create it`)
+      throw new Error(
+        `[TestRail] Flag 'updateRunTestCases' enabled but the run was not found, please create it`
+      );
     }
   } else if (existingRun) {
-    const { value: tests } = await throwOnApiError(testrailAPI.getTests(existingRun.id));
+    const { value: tests } = await throwOnApiError(
+      testrailAPI.getTests(existingRun.id)
+    );
     const currentCaseIds = tests?.map((test) => test.case_id) || [];
     const additionalDescription = "\n" + runDescription;
 
@@ -156,15 +215,19 @@ const prepareRun = async(testrailAPI: TestRail, config: Config, runName: any, re
       refs,
     };
 
-    const { value: newRun } = await throwOnApiError(testrailAPI.addRun(projectId, payload));
+    const { value: newRun } = await throwOnApiError(
+      testrailAPI.addRun(projectId, payload)
+    );
 
     console.log(`[TestRail] Test run added successfully: ${runName}`);
     return newRun;
   }
-}
+};
 
 const prepareReference = (config: Config, branch: string, buildNo: string) => {
-  return config.reference ? config.reference.replace("%BRANCH%", branch).replace("%BUILD%", buildNo) : "";
+  return config.reference
+    ? config.reference.replace("%BRANCH%", branch).replace("%BUILD%", buildNo)
+    : "";
 };
 
 const verifyConfig = (config: Config) => {
@@ -194,8 +257,12 @@ const verifyConfig = (config: Config) => {
   return false;
 };
 
-const throwOnApiError = async <T>(apiResult: Promise<T>): Promise<T> => {
-  const { response, value } = (await apiResult) as any;
+const throwOnApiError = async <
+  T extends { response: Response; value: unknown }
+>(
+  apiResult: Promise<T>
+): Promise<T> => {
+  const { response, value } = await apiResult;
   if (response.status >= 400) {
     console.error("[TestRail] Error during API request");
     throw {
@@ -205,12 +272,12 @@ const throwOnApiError = async <T>(apiResult: Promise<T>): Promise<T> => {
     };
   }
 
-  return Promise.resolve(({ response, value } as any) as T);
+  return Promise.resolve({ response, value } as T);
 };
 
 class TestcafeTestrailReporter {
   noColors: boolean;
-  formatError: any;
+  formatError: unknown;
 
   private config: Config;
   private branch: string;
@@ -232,13 +299,20 @@ class TestcafeTestrailReporter {
     this.screenshots = {};
   }
 
-  reportTaskStart = async (startTime: number, userAgents: string[]) => {
+  reportTaskStart = async (_startTime: number, userAgents: string[]) => {
     this.userAgents = userAgents;
   };
 
-  reportFixtureStart = async () => {};
+  reportFixtureStart = async () => {
+    // Not needed
+  };
 
-  reportTestDone = async (name: string, testRunInfo: TestRunInfo, meta: Meta, formatError: any) => {
+  reportTestDone = async (
+    name: string,
+    testRunInfo: TestRunInfo,
+    meta: Meta,
+    formatError: (x: Record<string, unknown>) => string
+  ) => {
     const hasErr = testRunInfo.errs.length;
 
     let testStatus = null;
@@ -258,8 +332,9 @@ class TestcafeTestrailReporter {
 
     if (caseId > 0) {
       const errorLog = testRunInfo.errs
-        .map((x: object) => {
+        .map((x: Record<string, unknown>) => {
           const formatted = formatError(x).replace(
+            // eslint-disable-next-line no-control-regex
             /[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g,
             ""
           );
@@ -277,30 +352,52 @@ class TestcafeTestrailReporter {
         this.screenshots[caseId] = testRunInfo.screenshots;
       }
     } else {
-      console.log(`[TestRail] Test missing the TestRail Case ID in test metadata: ${name}`);
+      console.log(
+        `[TestRail] Test missing the TestRail Case ID in test metadata: ${name}`
+      );
     }
   };
 
-  reportTaskDone = async (endTime: number, passed: number, warnings: string[], result: TaskResult) => {
+  reportTaskDone = async (
+    _endTime: number,
+    _passed: number,
+    _warnings: string[],
+    _result: TaskResult
+  ) => {
     const { host, user, apiKey, projectId, suiteId } = this.config;
 
     if (verifyConfig(this.config)) {
       try {
         if (this.results.length) {
-          const runName = prepareReportName(this.config, this.branch, this.buildNo, this.userAgents);
+          const runName = prepareReportName(
+            this.config,
+            this.branch,
+            this.buildNo,
+            this.userAgents
+          );
           const refs = prepareReference(this.config, this.branch, this.buildNo);
           const caseIdList = this.results.map((result) => result.case_id);
 
           const testrailAPI = new TestRail(host, user, apiKey);
-          const { value: caseList } = await throwOnApiError(testrailAPI.getCases(projectId, { suite_id: suiteId }));
+          const { value: caseList } = await throwOnApiError(
+            testrailAPI.getCases(projectId, { suite_id: suiteId })
+          );
           const existingCaseIds = caseList.map((item) => item.id);
 
           caseIdList.forEach((id) => {
-            if(!existingCaseIds.includes(id)) {
-              console.error(`[TestRail] All TestRail mappings should be valid. Following test case id does not exist in TestRail: ${id}.`);
+            if (!existingCaseIds.includes(id)) {
+              console.error(
+                `[TestRail] All TestRail mappings should be valid. Following test case id does not exist in TestRail: ${id}.`
+              );
             }
           });
-          let run: Run = await prepareRun(testrailAPI, this.config, runName, refs, caseIdList);
+          const run: Run = await prepareRun(
+            testrailAPI,
+            this.config,
+            runName,
+            refs,
+            caseIdList
+          );
 
           await this.publishTestResults(testrailAPI, run, this.results);
           await this.closeOldRuns(testrailAPI, this.config);
@@ -316,12 +413,18 @@ class TestcafeTestrailReporter {
 
   closeOldRuns = async (testrailAPI: TestRail, config: Config) => {
     if (config.runCloseAfterDays) {
-      const { value: runs } = await throwOnApiError(testrailAPI.getRuns(config.projectId, { is_completed: 0 }));
+      const { value: runs } = await throwOnApiError(
+        testrailAPI.getRuns(config.projectId, { is_completed: 0 })
+      );
       if (runs.length) {
         for (let i = 0; i < runs.length; i++) {
-          const shouldClose = moment.unix(runs[i].created_on) <= moment().subtract(config.runCloseAfterDays, "days");
+          const shouldClose =
+            moment.unix(runs[i].created_on) <=
+            moment().subtract(config.runCloseAfterDays, "days");
           if (shouldClose) {
-            console.log(`[TestRail] Closing test run ${runs[i].id}: ${runs[i].name}`);
+            console.log(
+              `[TestRail] Closing test run ${runs[i].id}: ${runs[i].name}`
+            );
             await throwOnApiError(testrailAPI.closeRun(runs[i].id));
           }
         }
@@ -329,21 +432,34 @@ class TestcafeTestrailReporter {
     }
   };
 
-  publishTestResults = async (testrailAPI: TestRail, run: Run, resultsToPush: AddResultForCase[]) => {
+  publishTestResults = async (
+    testrailAPI: TestRail,
+    run: Run,
+    resultsToPush: AddResultForCase[]
+  ) => {
     const runId = run.id;
-    const { value: results } = await throwOnApiError(testrailAPI.addResultsForCases(runId, resultsToPush));
+    const { value: results } = await throwOnApiError(
+      testrailAPI.addResultsForCases(runId, resultsToPush)
+    );
     const { value: tests } = await throwOnApiError(testrailAPI.getTests(runId));
 
     if (this.config.uploadScreenshots) {
       console.log("[TestRail] Uploading screenshots...");
       for (let i = 0; i < resultsToPush.length; i++) {
-        const test = tests.find((test) => test.case_id === resultsToPush[i].case_id);
+        const test = tests.find(
+          (test) => test.case_id === resultsToPush[i].case_id
+        );
         const result = results.find((result) => result.test_id === test?.id);
         if (result) {
           const screenshots = this.screenshots[resultsToPush[i].case_id];
           if (screenshots) {
             for (let j = 0; j < screenshots.length; j++) {
-              await throwOnApiError(testrailAPI.addAttachmentToResult(result.id, screenshots[j].screenshotPath));
+              await throwOnApiError(
+                testrailAPI.addAttachmentToResult(
+                  result.id,
+                  screenshots[j].screenshotPath
+                )
+              );
             }
           }
         } else {
@@ -363,14 +479,24 @@ class TestcafeTestrailReporter {
 }
 
 /// This weird setup is required due to TestCafe prototype injection method.
+// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export = () => {
   const reporter = new TestcafeTestrailReporter();
   return {
     reportTaskStart: reporter.reportTaskStart,
     reportFixtureStart: reporter.reportFixtureStart,
-    async reportTestDone(name: string, testRunInfo: TestRunInfo, meta: Meta): Promise<any> {
-      // @ts-ignore
-      return reporter.reportTestDone(name, testRunInfo, meta, this.formatError.bind(this));
+    async reportTestDone(
+      name: string,
+      testRunInfo: TestRunInfo,
+      meta: Meta
+    ): Promise<void> {
+      return reporter.reportTestDone(
+        name,
+        testRunInfo,
+        meta,
+        // @ts-expect-error Inject testrail error formatting method with bound context
+        this.formatError.bind(this)
+      );
     },
     reportTaskDone: reporter.reportTaskDone,
     reporter,

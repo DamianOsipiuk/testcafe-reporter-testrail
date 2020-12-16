@@ -5,7 +5,6 @@
     "module": "commonjs",
     "declaration": true,
     "removeComments": true,
-    "downlevelIteration": true,
     "strict": true,
     "noUnusedLocals": true,
     "noImplicitReturns": true,
@@ -13,5 +12,5 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true
   },
-  "include": ["src/*"],
+  "include": ["src/*"]
 }

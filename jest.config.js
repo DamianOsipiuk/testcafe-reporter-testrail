@@ -1,3 +1,4 @@
+/* eslint-disable */
 const { jsWithTs } = require("ts-jest/presets");
 
 module.exports = {

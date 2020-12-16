@@ -483,7 +483,6 @@ class TestcafeTestrailReporter {
 }
 
 /// This weird setup is required due to TestCafe prototype injection method.
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export = () => {
   const reporter = new TestcafeTestrailReporter();
   return {

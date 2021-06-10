@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  commitlint:
+    runs-on: ubuntu-latest
+
+    name: "Lint commit message"
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - uses: wagoid/commitlint-github-action@v3
+
+  verify:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [10, 12, 14, 16]
+
+    name: "Verify (Node ${{ matrix.node-version }})"
+    steps:
+      - uses: actions/checkout@v2
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v2
+        with:
+          node-version: ${{ matrix.node-version }}
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
+      - run: npm test
+        env:
+          CI: true
+
+  publish:
+    # publish only when merged in master on original repo, not on PR
+    if: github.repository == 'DamianOsipiuk/testcafe-reporter-testrail' && github.ref == 'refs/heads/main'
+    needs: [verify, commitlint]
+    runs-on: ubuntu-latest
+
+    name: "Publish to NPM"
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
+        with:
+          node-version: 14
+          registry-url: https://registry.npmjs.org/
+      - run: npm ci
+      - run: npm run build
+      - run: npx semantic-release@17 --branches main
+        env:
+          NODE_AUTH_TOKEN: ${{secrets.npm_token}}
+          GH_TOKEN: ${{secrets.GITHUB_TOKEN}}

@@ -161,13 +161,8 @@ const prepareRun = async (
   refs: string,
   caseIdList: number[]
 ): Promise<Run> => {
-  const {
-    projectId,
-    suiteId,
-    runDescription,
-    runId,
-    updateRunTestCases,
-  } = config;
+  const { projectId, suiteId, runDescription, runId, updateRunTestCases } =
+    config;
   let existingRun: Run | undefined;
 
   if (runId) {

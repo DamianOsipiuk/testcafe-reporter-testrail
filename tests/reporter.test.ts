@@ -84,7 +84,12 @@ describe("Reporter Plugin", () => {
       };
       const meta: any = {};
 
-      await plugin.reportTestDone.call(injectedScope, "test with no case id", testInfo, meta);
+      await plugin.reportTestDone.call(
+        injectedScope,
+        "test with no case id",
+        testInfo,
+        meta
+      );
       expect(plugin.reporter.results).toStrictEqual([]);
       expect(logMock).toBeCalledTimes(1);
       expect(logMock).toBeCalledWith(
@@ -113,7 +118,12 @@ describe("Reporter Plugin", () => {
         },
       ];
 
-      await plugin.reportTestDone.call(injectedScope, "test skipped", testInfo, meta);
+      await plugin.reportTestDone.call(
+        injectedScope,
+        "test skipped",
+        testInfo,
+        meta
+      );
       expect(plugin.reporter.results).toStrictEqual(expected);
       expect(logMock).toBeCalledTimes(0);
       expect(errorMock).toBeCalledTimes(0);
@@ -139,7 +149,12 @@ describe("Reporter Plugin", () => {
         },
       ];
 
-      await plugin.reportTestDone.call(injectedScope, "test failed", testInfo, meta);
+      await plugin.reportTestDone.call(
+        injectedScope,
+        "test failed",
+        testInfo,
+        meta
+      );
       expect(plugin.reporter.results).toStrictEqual(expected);
       expect(logMock).toBeCalledTimes(0);
       expect(errorMock).toBeCalledTimes(0);
@@ -165,7 +180,12 @@ describe("Reporter Plugin", () => {
         },
       ];
 
-      await plugin.reportTestDone.call(injectedScope, "test passed", testInfo, meta);
+      await plugin.reportTestDone.call(
+        injectedScope,
+        "test passed",
+        testInfo,
+        meta
+      );
       expect(plugin.reporter.results).toStrictEqual(expected);
       expect(logMock).toBeCalledTimes(0);
       expect(errorMock).toBeCalledTimes(0);
@@ -192,7 +212,12 @@ describe("Reporter Plugin", () => {
       ];
       const expectedScreenshots = { "123": ["screesnot1"] };
 
-      await plugin.reportTestDone.call(injectedScope, "test passed", testInfo, meta);
+      await plugin.reportTestDone.call(
+        injectedScope,
+        "test passed",
+        testInfo,
+        meta
+      );
       expect(plugin.reporter.results).toStrictEqual(expectedResult);
       expect(plugin.reporter.screenshots).toStrictEqual(expectedScreenshots);
       expect(logMock).toBeCalledTimes(0);
@@ -201,12 +226,11 @@ describe("Reporter Plugin", () => {
     });
 
     test("using existing run", async () => {
-
       const existingRunConfig: any = {
         ...config,
-        runId: "R123"
+        runId: "R123",
       };
-  
+
       fsMock.mockReturnValue(JSON.stringify(existingRunConfig));
 
       const plugin = TestCafeReporterTestrail();
@@ -227,7 +251,12 @@ describe("Reporter Plugin", () => {
         },
       ];
 
-      await plugin.reportTestDone.call(injectedScope, "test passed", testInfo, meta);
+      await plugin.reportTestDone.call(
+        injectedScope,
+        "test passed",
+        testInfo,
+        meta
+      );
       expect(plugin.reporter.results).toStrictEqual(expectedResult);
       expect(logMock).toBeCalledTimes(0);
       expect(errorMock).toBeCalledTimes(0);

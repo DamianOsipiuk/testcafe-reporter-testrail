@@ -280,7 +280,7 @@ class TestcafeTestrailReporter {
     );
     const { value: tests } = await throwOnApiError(testrailAPI.getTests(runId));
 
-    uploadScreenshots({
+    await uploadScreenshots({
       config: this.config,
       tests,
       results,
@@ -289,7 +289,7 @@ class TestcafeTestrailReporter {
       testrailAPI,
     });
 
-    uploadVideos({
+    await uploadVideos({
       config: this.config,
       tests,
       results,

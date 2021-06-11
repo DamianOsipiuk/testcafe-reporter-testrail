@@ -3,7 +3,14 @@ import { TestRail, AddResultForCase, Test, Result } from "testrail-js-api";
 import { throwOnApiError } from "../utils";
 import type { Config, Video } from "../types";
 
-type UploadVideos = (options: {
+export const uploadVideos = async ({
+  config,
+  tests,
+  results,
+  resultsToPush,
+  videos,
+  testrailAPI,
+}: {
   config: Config;
   tests: Test[];
   results: Result[];
@@ -12,15 +19,6 @@ type UploadVideos = (options: {
     [key: string]: Video[];
   };
   testrailAPI: TestRail;
-}) => void;
-
-export const uploadVideos: UploadVideos = async ({
-  config,
-  tests,
-  results,
-  resultsToPush,
-  videos,
-  testrailAPI,
 }) => {
   if (config.uploadVideos) {
     console.log("[TestRail] Uploading videos...");

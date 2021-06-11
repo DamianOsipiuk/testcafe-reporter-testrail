@@ -3,7 +3,14 @@ import { TestRail, AddResultForCase, Test, Result } from "testrail-js-api";
 import { throwOnApiError } from "../utils";
 import type { Config, Screenshot } from "../types";
 
-type UploadScreenshots = (options: {
+export const uploadScreenshots = async ({
+  config,
+  tests,
+  results,
+  resultsToPush,
+  screenshots,
+  testrailAPI,
+}: {
   config: Config;
   tests: Test[];
   results: Result[];
@@ -12,15 +19,6 @@ type UploadScreenshots = (options: {
     [key: string]: Screenshot[];
   };
   testrailAPI: TestRail;
-}) => void;
-
-export const uploadScreenshots: UploadScreenshots = async ({
-  config,
-  tests,
-  results,
-  resultsToPush,
-  screenshots,
-  testrailAPI,
 }) => {
   if (config.uploadScreenshots) {
     console.log("[TestRail] Uploading screenshots...");

@@ -66,6 +66,10 @@ export const prepareConfig = (options: Config = {} as Config): Config => {
       process.env.TESTRAIL_UPLOAD_SCREENSHOTS == "true" ||
       config.uploadScreenshots ||
       false,
+    uploadVideos:
+      process.env.TESTRAIL_UPLOAD_VIDEOS == "true" ||
+      config.uploadVideos ||
+      false,
     updateRunTestCases:
       process.env.TESTRAIL_UPDATE_RUN_TEST_CASES == "true" ||
       config.updateRunTestCases !== false,

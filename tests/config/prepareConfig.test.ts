@@ -26,6 +26,7 @@ const defaultConfig = {
   suiteId: 0,
   updateRunTestCases: true,
   uploadScreenshots: false,
+  uploadVideos: false,
   user: undefined,
 };
 
@@ -46,6 +47,7 @@ const envConfig = {
   TESTRAIL_CASE_META: "meta",
   TESTRAIL_RUN_CLOSE_AFTER_DAYS: 111,
   TESTRAIL_UPLOAD_SCREENSHOTS: "true",
+  TESTRAIL_UPLOAD_VIDEOS: "true",
   TESTRAIL_UPDATE_RUN_TEST_CASES: "true",
 };
 
@@ -66,6 +68,7 @@ const fileConfig = {
   suiteId: "4444",
   updateRunTestCases: true,
   uploadScreenshots: false,
+  uploadVideos: false,
   user: "user2",
 };
 
@@ -144,6 +147,7 @@ describe("prepareConfig", () => {
       suiteId: 234,
       updateRunTestCases: true,
       uploadScreenshots: true,
+      uploadVideos: true,
       user: "user",
     });
   });
@@ -170,6 +174,7 @@ describe("prepareConfig", () => {
       suiteId: 4444,
       updateRunTestCases: true,
       uploadScreenshots: false,
+      uploadVideos: false,
       user: "user2",
     });
   });
@@ -197,6 +202,7 @@ describe("prepareConfig", () => {
       suiteId: 234,
       updateRunTestCases: true,
       uploadScreenshots: true,
+      uploadVideos: true,
       user: "user",
     });
   });

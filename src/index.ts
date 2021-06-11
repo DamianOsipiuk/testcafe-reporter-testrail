@@ -2,13 +2,20 @@ import moment from "moment";
 import { TestRail, TestStatus, Run, AddResultForCase } from "testrail-js-api";
 
 import { prepareConfig, verifyConfig } from "./config";
-import { prepareReference, prepareReportName, throwOnApiError } from "./utils";
+import {
+  prepareReference,
+  prepareReportName,
+  throwOnApiError,
+  uploadScreenshots,
+  uploadVideos,
+} from "./utils";
 import type {
   Config,
   Meta,
   Screenshot,
   TaskResult,
   TestRunInfo,
+  Video,
 } from "./types";
 
 const Status = {
@@ -132,6 +139,9 @@ class TestcafeTestrailReporter {
   screenshots: {
     [key: string]: Screenshot[];
   };
+  videos: {
+    [key: string]: Video[];
+  };
 
   constructor() {
     this.config = prepareConfig();
@@ -141,6 +151,7 @@ class TestcafeTestrailReporter {
     this.noColors = false;
     this.results = [];
     this.screenshots = {};
+    this.videos = {};
   }
 
   reportTaskStart = async (_startTime: number, userAgents: string[]) => {
@@ -194,6 +205,9 @@ class TestcafeTestrailReporter {
       });
       if (testRunInfo.screenshots.length) {
         this.screenshots[caseId] = testRunInfo.screenshots;
+      }
+      if (testRunInfo.videos?.length) {
+        this.videos[caseId] = testRunInfo.videos;
       }
     } else {
       console.log(
@@ -266,32 +280,23 @@ class TestcafeTestrailReporter {
     );
     const { value: tests } = await throwOnApiError(testrailAPI.getTests(runId));
 
-    if (this.config.uploadScreenshots) {
-      console.log("[TestRail] Uploading screenshots...");
-      for (let i = 0; i < resultsToPush.length; i++) {
-        const test = tests.find(
-          (test) => test.case_id === resultsToPush[i].case_id
-        );
-        const result = results.find((result) => result.test_id === test?.id);
-        if (result) {
-          const screenshots = this.screenshots[resultsToPush[i].case_id];
-          if (screenshots) {
-            for (let j = 0; j < screenshots.length; j++) {
-              await throwOnApiError(
-                testrailAPI.addAttachmentToResult(
-                  result.id,
-                  screenshots[j].screenshotPath
-                )
-              );
-            }
-          }
-        } else {
-          console.error(
-            `[TestRail] Could not upload screenshot for a failed test. Case ID: ${resultsToPush[i].caseId}. Test ID: ${test?.id}`
-          );
-        }
-      }
-    }
+    uploadScreenshots({
+      config: this.config,
+      tests,
+      results,
+      resultsToPush,
+      screenshots: this.screenshots,
+      testrailAPI,
+    });
+
+    uploadVideos({
+      config: this.config,
+      tests,
+      results,
+      resultsToPush,
+      videos: this.videos,
+      testrailAPI,
+    });
 
     if (results.length == 0) {
       console.log("[TestRail] No data has been published to TestRail");

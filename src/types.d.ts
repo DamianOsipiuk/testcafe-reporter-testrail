@@ -15,6 +15,7 @@ export interface Config<T = number> {
   caseMeta: string;
   runCloseAfterDays?: number;
   uploadScreenshots: boolean;
+  uploadVideos: boolean;
   updateRunTestCases: boolean;
 }
 
@@ -36,6 +37,10 @@ export interface Screenshot {
   takenOnFail: boolean;
 }
 
+export interface Video {
+  videoPath: string;
+}
+
 export interface TestRunInfo {
   errs: Record<string, unknown>[];
   warnings: string[];
@@ -43,6 +48,7 @@ export interface TestRunInfo {
   unstable: boolean;
   screenshotPath: string;
   screenshots: Screenshot[];
+  videos: Video[];
   quarantine: { [key: string]: { passed: boolean } };
   skipped: boolean;
 }

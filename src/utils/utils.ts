@@ -1,7 +1,7 @@
 import moment from "moment";
 import { Response } from "node-fetch";
 
-import type { Config } from "./types";
+import type { Config } from "../types";
 
 export async function throwOnApiError<
   T extends { response: Response; value: unknown }

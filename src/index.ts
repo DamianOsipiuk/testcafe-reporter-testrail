@@ -71,7 +71,7 @@ const prepareRun = async (
     const { value: tests } = await throwOnApiError(
       testrailAPI.getTests(existingRun.id)
     );
-    const currentCaseIds = tests?.map((test) => test.case_id) || [];
+    const currentCaseIds = tests?.tests.map((test) => test.case_id) || [];
     const additionalDescription = "\n" + runDescription;
     const newDescription = existingRun.description
       ? existingRun.description.replace(additionalDescription, "") +
@@ -240,7 +240,7 @@ class TestcafeTestrailReporter {
           const { value: caseList } = await throwOnApiError(
             testrailAPI.getCases(projectId, { suite_id: suiteId })
           );
-          const existingCaseIds = caseList.map((item) => item.id);
+          const existingCaseIds = caseList.cases.map((item) => item.id);
 
           caseIdList.forEach((id) => {
             if (!existingCaseIds.includes(id)) {

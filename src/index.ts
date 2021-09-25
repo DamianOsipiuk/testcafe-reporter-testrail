@@ -53,10 +53,10 @@ const prepareRun = async (
     );
     existingRun = returnedRun;
   } else {
-    const { value: runs } = await throwOnApiError(
+    const { value: runsResult } = await throwOnApiError(
       testrailAPI.getRuns(projectId, { is_completed: 0 })
     );
-    existingRun = runs?.find((run) => run.refs === refs);
+    existingRun = runsResult?.runs?.find((run) => run.refs === refs);
   }
 
   if (!updateRunTestCases) {
@@ -68,10 +68,11 @@ const prepareRun = async (
       );
     }
   } else if (existingRun) {
-    const { value: tests } = await throwOnApiError(
+    const { value: testsResult } = await throwOnApiError(
       testrailAPI.getTests(existingRun.id)
     );
-    const currentCaseIds = tests?.map((test) => test.case_id) || [];
+    const currentCaseIds =
+      testsResult?.tests?.map((test) => test.case_id) || [];
     const additionalDescription = "\n" + runDescription;
     const newDescription = existingRun.description
       ? existingRun.description.replace(additionalDescription, "") +
@@ -107,9 +108,10 @@ const prepareRun = async (
 
 const closeOldRuns = async (testrailAPI: TestRail, config: Config) => {
   if (config.runCloseAfterDays) {
-    const { value: runs } = await throwOnApiError(
+    const { value: runsResult } = await throwOnApiError(
       testrailAPI.getRuns(config.projectId, { is_completed: 0 })
     );
+    const runs = runsResult.runs || [];
     if (runs.length) {
       for (let i = 0; i < runs.length; i++) {
         const shouldClose =
@@ -237,10 +239,10 @@ class TestcafeTestrailReporter {
           const caseIdList = this.results.map((result) => result.case_id);
 
           const testrailAPI = new TestRail(host, user, apiKey);
-          const { value: caseList } = await throwOnApiError(
+          const { value: caseListResult } = await throwOnApiError(
             testrailAPI.getCases(projectId, { suite_id: suiteId })
           );
-          const existingCaseIds = caseList.map((item) => item.id);
+          const existingCaseIds = caseListResult?.cases.map((item) => item.id);
 
           caseIdList.forEach((id) => {
             if (!existingCaseIds.includes(id)) {
@@ -278,7 +280,10 @@ class TestcafeTestrailReporter {
     const { value: results } = await throwOnApiError(
       testrailAPI.addResultsForCases(runId, resultsToPush)
     );
-    const { value: tests } = await throwOnApiError(testrailAPI.getTests(runId));
+    const { value: testsResult } = await throwOnApiError(
+      testrailAPI.getTests(runId)
+    );
+    const tests = testsResult.tests || [];
 
     await uploadScreenshots({
       config: this.config,

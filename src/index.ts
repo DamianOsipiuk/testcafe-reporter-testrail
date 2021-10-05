@@ -199,11 +199,13 @@ class TestcafeTestrailReporter {
           return formatted;
         })
         .join("\n");
-
+      
+      const testDuration = (testRunInfo.durationMs / 1000).toString() + "s";
       this.results.push({
         case_id: caseId,
         status_id: testStatus.value,
         comment: `Test ${testStatus.text}\n${errorLog}`,
+        elapsed: testDuration
       });
       if (testRunInfo.screenshots.length) {
         this.screenshots[caseId] = testRunInfo.screenshots;

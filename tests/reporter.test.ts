@@ -115,6 +115,7 @@ describe("Reporter Plugin", () => {
           case_id: 123,
           comment: "Test SKIPPED\n",
           status_id: 2,
+          elapsed: "0.001s",
         },
       ];
 
@@ -146,6 +147,7 @@ describe("Reporter Plugin", () => {
           case_id: 123,
           comment: "Test FAILED\nerror1",
           status_id: 5,
+          elapsed: "0.001s",
         },
       ];
 
@@ -177,6 +179,7 @@ describe("Reporter Plugin", () => {
           case_id: 123,
           comment: "Test PASSED\n",
           status_id: 1,
+          elapsed: "0.001s",
         },
       ];
 
@@ -208,6 +211,7 @@ describe("Reporter Plugin", () => {
           case_id: 123,
           comment: "Test PASSED\n",
           status_id: 1,
+          elapsed: "0.001s",
         },
       ];
       const expectedScreenshots = { "123": ["screesnot1"] };
@@ -248,6 +252,7 @@ describe("Reporter Plugin", () => {
           case_id: 123,
           comment: "Test PASSED\n",
           status_id: 1,
+          elapsed: "0.001s",
         },
       ];
 

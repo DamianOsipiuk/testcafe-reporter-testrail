@@ -199,7 +199,10 @@ class TestcafeTestrailReporter {
           return formatted;
         })
         .join("\n");
-      const testDuration = (testRunInfo.durationMs / 1000).toString() + "s";
+      let testDuration = "0.001s";
+      if (testRunInfo.durationMs > 0) {
+        testDuration = (testRunInfo.durationMs / 1000).toString() + "s";
+      }
       this.results.push({
         case_id: caseId,
         status_id: testStatus.value,

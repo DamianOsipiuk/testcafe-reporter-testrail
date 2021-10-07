@@ -199,16 +199,24 @@ class TestcafeTestrailReporter {
           return formatted;
         })
         .join("\n");
-      let testDuration = "0.001s";
+      let testDuration;
       if (testRunInfo.durationMs > 0) {
         testDuration = (testRunInfo.durationMs / 1000).toString() + "s";
       }
-      this.results.push({
-        case_id: caseId,
-        status_id: testStatus.value,
-        comment: `Test ${testStatus.text}\n${errorLog}`,
-        elapsed: testDuration,
-      });
+      if (testDuration) {
+        this.results.push({
+          case_id: caseId,
+          status_id: testStatus.value,
+          comment: `Test ${testStatus.text}\n${errorLog}`,
+          elapsed: testDuration,
+        });
+      } else {
+        this.results.push({
+          case_id: caseId,
+          status_id: testStatus.value,
+          comment: `Test ${testStatus.text}\n${errorLog}`,
+        });
+      }
       if (testRunInfo.screenshots.length) {
         this.screenshots[caseId] = testRunInfo.screenshots;
       }

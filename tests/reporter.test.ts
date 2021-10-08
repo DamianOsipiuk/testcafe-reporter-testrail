@@ -124,7 +124,7 @@ describe("Reporter Plugin", () => {
         testInfo,
         meta
       );
-      expect(plugin.reporter.results).toStrictEqual(expected);
+      expect(plugin.reporter.results).toEqual(expected);
       expect(logMock).toBeCalledTimes(0);
       expect(errorMock).toBeCalledTimes(0);
       expect(fetchMock).toBeCalledTimes(0);
@@ -155,7 +155,7 @@ describe("Reporter Plugin", () => {
         testInfo,
         meta
       );
-      expect(plugin.reporter.results).toStrictEqual(expected);
+      expect(plugin.reporter.results).toEqual(expected);
       expect(logMock).toBeCalledTimes(0);
       expect(errorMock).toBeCalledTimes(0);
       expect(fetchMock).toBeCalledTimes(0);
@@ -186,7 +186,7 @@ describe("Reporter Plugin", () => {
         testInfo,
         meta
       );
-      expect(plugin.reporter.results).toStrictEqual(expected);
+      expect(plugin.reporter.results).toEqual(expected);
       expect(logMock).toBeCalledTimes(0);
       expect(errorMock).toBeCalledTimes(0);
       expect(fetchMock).toBeCalledTimes(0);
@@ -218,7 +218,7 @@ describe("Reporter Plugin", () => {
         testInfo,
         meta
       );
-      expect(plugin.reporter.results).toStrictEqual(expectedResult);
+      expect(plugin.reporter.results).toEqual(expectedResult);
       expect(plugin.reporter.screenshots).toStrictEqual(expectedScreenshots);
       expect(logMock).toBeCalledTimes(0);
       expect(errorMock).toBeCalledTimes(0);
@@ -257,7 +257,7 @@ describe("Reporter Plugin", () => {
         testInfo,
         meta
       );
-      expect(plugin.reporter.results).toStrictEqual(expectedResult);
+      expect(plugin.reporter.results).toEqual(expectedResult);
       expect(logMock).toBeCalledTimes(0);
       expect(errorMock).toBeCalledTimes(0);
       expect(fetchMock).toBeCalledTimes(0);

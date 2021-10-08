@@ -203,20 +203,12 @@ class TestcafeTestrailReporter {
       if (testRunInfo.durationMs > 0) {
         testDuration = (testRunInfo.durationMs / 1000).toString() + "s";
       }
-      if (testDuration) {
-        this.results.push({
-          case_id: caseId,
-          status_id: testStatus.value,
-          comment: `Test ${testStatus.text}\n${errorLog}`,
-          elapsed: testDuration,
-        });
-      } else {
-        this.results.push({
-          case_id: caseId,
-          status_id: testStatus.value,
-          comment: `Test ${testStatus.text}\n${errorLog}`,
-        });
-      }
+      this.results.push({
+        case_id: caseId,
+        status_id: testStatus.value,
+        comment: `Test ${testStatus.text}\n${errorLog}`,
+        elapsed: testDuration,
+      });
       if (testRunInfo.screenshots.length) {
         this.screenshots[caseId] = testRunInfo.screenshots;
       }

@@ -1,5 +1,5 @@
 import moment from "moment";
-import { Response } from "node-fetch";
+import type { Response } from "node-fetch";
 
 import type { Config } from "../types";
 

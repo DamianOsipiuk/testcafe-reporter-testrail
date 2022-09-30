@@ -161,38 +161,50 @@ class TestcafeTestrailReporter {
       testStatus = Status.Failed;
     }
 
-    let caseId = 0;
+    const caseIdList: number[] = [];
     if (meta[this.config.caseMeta]) {
-      caseId = Number(meta[this.config.caseMeta].replace("C", "").trim());
+      if (typeof meta[this.config.caseMeta] === "string") {
+        caseIdList.push(
+          parseInt(meta[this.config.caseMeta].replace("C", "").trim(), 10)
+        );
+      } else {
+        for (let i = 0; i < meta[this.config.caseMeta].length; i++) {
+          caseIdList.push(
+            Number(meta[this.config.caseMeta][i].replace("C", "").trim())
+          );
+        }
+      }
     }
 
-    if (caseId > 0) {
-      const errorLog = testRunInfo.errs
-        .map((x: Record<string, unknown>) => {
-          const formatted = formatError(x).replace(
-            // eslint-disable-next-line no-control-regex
-            /[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g,
-            ""
-          );
+    if (caseIdList.length > 0) {
+      for (let i = 0; i < caseIdList.length; i++) {
+        const errorLog = testRunInfo.errs
+          .map((x: Record<string, unknown>) => {
+            const formatted = formatError(x).replace(
+              // eslint-disable-next-line no-control-regex
+              /[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g,
+              ""
+            );
 
-          return formatted;
-        })
-        .join("\n");
-      let testDuration;
-      if (testRunInfo.durationMs > 0) {
-        testDuration = (testRunInfo.durationMs / 1000).toString() + "s";
-      }
-      this.results.push({
-        case_id: caseId,
-        status_id: testStatus.value,
-        comment: `Test ${testStatus.text}\n${errorLog}`,
-        elapsed: testDuration,
-      });
-      if (testRunInfo.screenshots.length) {
-        this.screenshots[caseId] = testRunInfo.screenshots;
-      }
-      if (testRunInfo.videos?.length) {
-        this.videos[caseId] = testRunInfo.videos;
+            return formatted;
+          })
+          .join("\n");
+        let testDuration;
+        if (testRunInfo.durationMs > 0) {
+          testDuration = (testRunInfo.durationMs / 1000).toString() + "s";
+        }
+        this.results.push({
+          case_id: caseIdList[i],
+          status_id: testStatus.value,
+          comment: `Test ${testStatus.text}\n${errorLog}`,
+          elapsed: testDuration,
+        });
+        if (testRunInfo.screenshots.length) {
+          this.screenshots[caseIdList[i]] = testRunInfo.screenshots;
+        }
+        if (testRunInfo.videos?.length) {
+          this.videos[caseIdList[i]] = testRunInfo.videos;
+        }
       }
     } else {
       console.log(

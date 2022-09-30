@@ -35,7 +35,7 @@
   "homepage": "https://github.com/DamianOsipiuk/testcafe-reporter-testrail#readme",
   "dependencies": {
     "moment": "^2.29.4",
-    "testrail-js-api": "^0.3.0"
+    "testrail-js-api": "^0.3.2"
   },
   "devDependencies": {
     "@types/jest": "^29.1.0",

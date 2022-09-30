@@ -72,8 +72,24 @@ const prepareRun = async (
     const { value: testsResult } = await throwOnApiError(
       testrailAPI.getTests(existingRun.id)
     );
-    const currentCaseIds =
-      testsResult?.tests?.map((test) => test.case_id) || [];
+    let currentCaseIds = testsResult?.tests?.map((test) => test.case_id) || [];
+    let missingRes = false;
+    if (testsResult._links.next !== null) {
+      missingRes = true;
+    }
+    let offsetVal = 0;
+    while (missingRes) {
+      offsetVal += 250;
+      const { value: testsResult } = await throwOnApiError(
+        testrailAPI.getTests(existingRun.id, { offset: offsetVal })
+      );
+      currentCaseIds = currentCaseIds.concat(
+        testsResult?.tests?.map((test) => test.case_id)
+      );
+      if (testsResult._links.next === null) {
+        missingRes = false;
+      }
+    }
     const additionalDescription = "\n" + runDescription;
     const newDescription = existingRun.description
       ? existingRun.description.replace(additionalDescription, "") +
@@ -237,7 +253,27 @@ class TestcafeTestrailReporter {
           const { value: caseListResult } = await throwOnApiError(
             testrailAPI.getCases(projectId, { suite_id: suiteId })
           );
-          const existingCaseIds = caseListResult?.cases.map((item) => item.id);
+          let existingCaseIds = caseListResult?.cases.map((item) => item.id);
+          let missingRes = false;
+          if (caseListResult._links.next !== null) {
+            missingRes = true;
+          }
+          let offsetVal = 0;
+          while (missingRes) {
+            offsetVal += 250;
+            const { value: caseListResult } = await throwOnApiError(
+              testrailAPI.getCases(projectId, {
+                suite_id: suiteId,
+                offset: offsetVal,
+              })
+            );
+            existingCaseIds = existingCaseIds.concat(
+              caseListResult?.cases.map((item) => item.id)
+            );
+            if (caseListResult._links.next === null) {
+              missingRes = false;
+            }
+          }
 
           caseIdList.forEach((id) => {
             if (!existingCaseIds.includes(id)) {
@@ -278,7 +314,22 @@ class TestcafeTestrailReporter {
     const { value: testsResult } = await throwOnApiError(
       testrailAPI.getTests(runId)
     );
-    const tests = testsResult.tests || [];
+    let tests = testsResult.tests || [];
+    let missingRes = false;
+    if (testsResult._links.next !== null) {
+      missingRes = true;
+    }
+    let offsetVal = 0;
+    while (missingRes) {
+      offsetVal += 250;
+      const { value: testsResult } = await throwOnApiError(
+        testrailAPI.getTests(runId, { offset: offsetVal })
+      );
+      tests = tests.concat(testsResult.tests);
+      if (testsResult._links.next === null) {
+        missingRes = false;
+      }
+    }
 
     if (this.config.uploadScreenshots) {
       await uploadScreenshots({

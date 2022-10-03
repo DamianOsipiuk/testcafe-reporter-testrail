@@ -4,6 +4,8 @@ import { prepareConfig, verifyConfig } from "./config";
 import { uploadScreenshots } from "./utils/upload-screenshots";
 import { uploadVideos } from "./utils/upload-videos";
 import { closeOldRuns } from "./utils/close-runs";
+import { getAllCases, getAllTests } from "./utils/testrail-getResults";
+
 import {
   prepareReference,
   prepareReportName,
@@ -69,27 +71,8 @@ const prepareRun = async (
       );
     }
   } else if (existingRun) {
-    const { value: testsResult } = await throwOnApiError(
-      testrailAPI.getTests(existingRun.id)
-    );
-    let currentCaseIds = testsResult?.tests?.map((test) => test.case_id) || [];
-    let missingRes = false;
-    if (testsResult._links.next !== null) {
-      missingRes = true;
-    }
-    let offsetVal = 0;
-    while (missingRes) {
-      offsetVal += 250;
-      const { value: testsResult } = await throwOnApiError(
-        testrailAPI.getTests(existingRun.id, { offset: offsetVal })
-      );
-      currentCaseIds = currentCaseIds.concat(
-        testsResult?.tests?.map((test) => test.case_id)
-      );
-      if (testsResult._links.next === null) {
-        missingRes = false;
-      }
-    }
+    const tests = await getAllTests(testrailAPI, config);
+    const currentCaseIds = tests?.map((test) => test.case_id) || [];
     const additionalDescription = "\n" + runDescription;
     const newDescription = existingRun.description
       ? existingRun.description.replace(additionalDescription, "") +
@@ -235,7 +218,7 @@ class TestcafeTestrailReporter {
     _warnings: string[],
     _result: TaskResult
   ) => {
-    const { host, user, apiKey, projectId, suiteId } = this.config;
+    const { host, user, apiKey } = this.config;
 
     if (verifyConfig(this.config)) {
       try {
@@ -250,31 +233,8 @@ class TestcafeTestrailReporter {
           const caseIdList = this.results.map((result) => result.case_id);
 
           const testrailAPI = new TestRail(host, user, apiKey);
-          const { value: caseListResult } = await throwOnApiError(
-            testrailAPI.getCases(projectId, { suite_id: suiteId })
-          );
-          let existingCaseIds = caseListResult?.cases.map((item) => item.id);
-          let missingRes = false;
-          if (caseListResult._links.next !== null) {
-            missingRes = true;
-          }
-          let offsetVal = 0;
-          while (missingRes) {
-            offsetVal += 250;
-            const { value: caseListResult } = await throwOnApiError(
-              testrailAPI.getCases(projectId, {
-                suite_id: suiteId,
-                offset: offsetVal,
-              })
-            );
-            existingCaseIds = existingCaseIds.concat(
-              caseListResult?.cases.map((item) => item.id)
-            );
-            if (caseListResult._links.next === null) {
-              missingRes = false;
-            }
-          }
-
+          const cases = await getAllCases(testrailAPI, this.config);
+          const existingCaseIds = cases.map((item) => item.id)
           caseIdList.forEach((id) => {
             if (!existingCaseIds.includes(id)) {
               console.error(
@@ -311,25 +271,7 @@ class TestcafeTestrailReporter {
     const { value: results } = await throwOnApiError(
       testrailAPI.addResultsForCases(runId, resultsToPush)
     );
-    const { value: testsResult } = await throwOnApiError(
-      testrailAPI.getTests(runId)
-    );
-    let tests = testsResult.tests || [];
-    let missingRes = false;
-    if (testsResult._links.next !== null) {
-      missingRes = true;
-    }
-    let offsetVal = 0;
-    while (missingRes) {
-      offsetVal += 250;
-      const { value: testsResult } = await throwOnApiError(
-        testrailAPI.getTests(runId, { offset: offsetVal })
-      );
-      tests = tests.concat(testsResult.tests);
-      if (testsResult._links.next === null) {
-        missingRes = false;
-      }
-    }
+    const tests = await getAllTests(testrailAPI, this.config);
 
     if (this.config.uploadScreenshots) {
       await uploadScreenshots({

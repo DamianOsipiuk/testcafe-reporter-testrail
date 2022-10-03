@@ -234,7 +234,7 @@ class TestcafeTestrailReporter {
 
           const testrailAPI = new TestRail(host, user, apiKey);
           const cases = await getAllCases(testrailAPI, this.config);
-          const existingCaseIds = cases.map((item) => item.id)
+          const existingCaseIds = cases.map((item) => item.id);
           caseIdList.forEach((id) => {
             if (!existingCaseIds.includes(id)) {
               console.error(

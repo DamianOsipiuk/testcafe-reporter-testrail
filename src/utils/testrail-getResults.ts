@@ -2,7 +2,7 @@ import type { TestRail } from "testrail-js-api";
 import type { Config } from "../types";
 import { throwOnApiError } from "./misc";
 
-export const getAllCases = async (testrailAPI: TestRail, config: Config ) => {
+export const getAllCases = async (testrailAPI: TestRail, config: Config) => {
   let { value: caseListResult } = await throwOnApiError(
     testrailAPI.getCases(config.projectId, { suite_id: config.suiteId })
   );
@@ -21,8 +21,7 @@ export const getAllCases = async (testrailAPI: TestRail, config: Config ) => {
   return cases;
 };
 
-
-export const getAllTests = async (testrailAPI: TestRail, config: Config ) => {
+export const getAllTests = async (testrailAPI: TestRail, config: Config) => {
   let { value: testsResult } = await throwOnApiError(
     testrailAPI.getTests(config.runId)
   );
@@ -36,4 +35,4 @@ export const getAllTests = async (testrailAPI: TestRail, config: Config ) => {
     tests = tests.concat(testsResult.tests);
   }
   return tests;
-}
+};

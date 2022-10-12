@@ -71,7 +71,7 @@ const prepareRun = async (
       );
     }
   } else if (existingRun) {
-    const tests = await getAllTests(testrailAPI, config);
+    const tests = await getAllTests(testrailAPI, existingRun.id);
     const currentCaseIds = tests?.map((test) => test.case_id) || [];
     const additionalDescription = "\n" + runDescription;
     const newDescription = existingRun.description
@@ -271,7 +271,7 @@ class TestcafeTestrailReporter {
     const { value: results } = await throwOnApiError(
       testrailAPI.addResultsForCases(runId, resultsToPush)
     );
-    const tests = await getAllTests(testrailAPI, this.config);
+    const tests = await getAllTests(testrailAPI, runId);
 
     if (this.config.uploadScreenshots) {
       await uploadScreenshots({

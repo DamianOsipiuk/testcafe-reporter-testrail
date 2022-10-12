@@ -21,16 +21,16 @@ export const getAllCases = async (testrailAPI: TestRail, config: Config) => {
   return cases;
 };
 
-export const getAllTests = async (testrailAPI: TestRail, config: Config) => {
+export const getAllTests = async (testrailAPI: TestRail, runId: number) => {
   let { value: testsResult } = await throwOnApiError(
-    testrailAPI.getTests(config.runId)
+    testrailAPI.getTests(runId)
   );
   let tests = testsResult.tests || [];
   let offsetVal = 0;
   while (testsResult._links.next !== null) {
     offsetVal += 250;
     ({ value: testsResult } = await throwOnApiError(
-      testrailAPI.getTests(config.runId, { offset: offsetVal })
+      testrailAPI.getTests(runId, { offset: offsetVal })
     ));
     tests = tests.concat(testsResult.tests);
   }

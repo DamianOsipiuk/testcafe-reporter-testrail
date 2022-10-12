@@ -71,7 +71,7 @@ const prepareRun = async (
       );
     }
   } else if (existingRun) {
-    const tests = await getAllTests(testrailAPI, runId);
+    const tests = await getAllTests(testrailAPI, existingRun.id);
     const currentCaseIds = tests?.map((test) => test.case_id) || [];
     const additionalDescription = "\n" + runDescription;
     const newDescription = existingRun.description
